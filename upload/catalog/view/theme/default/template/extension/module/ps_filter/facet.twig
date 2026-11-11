@@ -1,0 +1,10 @@
+{# Один фасет: заголовок-переключатель и виджет. Новый виджет = файл widget/<имя>.twig в теме. #}
+<div class="psf-facet psf-facet--{{ facet.type }} psf-facet--{{ facet.widget }}{% if facet.collapsed %} is-collapsed{% endif %}{% if facet.selected %} is-selected{% endif %}" data-psf-facet="{{ facet.code }}">
+  <button type="button" class="psf-facet__title" data-psf-toggle aria-expanded="{{ facet.collapsed ? 'false' : 'true' }}"{% if facet.hint %} title="{{ facet.hint|e }}"{% endif %}>
+    <span class="psf-facet__name">{{ facet.name|e }}</span>
+    <span class="psf-facet__arrow" aria-hidden="true"></span>
+  </button>
+  <div class="psf-facet__body">
+    {% include [tpl ~ 'widget/' ~ facet.widget ~ '.twig', tpl_default ~ 'widget/' ~ facet.widget ~ '.twig', tpl_default ~ 'widget/checkbox.twig'] %}
+  </div>
+</div>

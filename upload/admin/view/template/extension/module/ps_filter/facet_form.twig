@@ -1,0 +1,468 @@
+{#
+  PS Filter — форма фасета: «Общие» (названия по языкам, вид, настройки источника),
+  «Значения» (AJAX-страницы с поиском, правка в таблице, объединение синонимов),
+  «Категории» (переопределения по веткам дерева). Кнопка «Сохранить» сохраняет все три вкладки.
+#}
+{{ header }}{{ column_left }}
+<div id="content">
+  <div class="page-header">
+    <div class="container-fluid">
+      <div class="pull-right">
+        {% if can_modify %}<button type="button" id="psf-save" class="btn btn-primary" title="{{ button_save }}"><i class="fa fa-save"></i></button>{% endif %}
+        <a href="{{ url_list }}" class="btn btn-default" title="{{ button_back }}"><i class="fa fa-reply"></i></a>
+      </div>
+      <h1>{{ heading_facet }}</h1>
+      <ul class="breadcrumb">{% for b in breadcrumbs %}<li><a href="{{ b.href }}">{{ b.text }}</a></li>{% endfor %}</ul>
+    </div>
+  </div>
+  <div class="container-fluid">
+    <div id="psf-alert"></div>
+    <div class="panel panel-default">
+      <div class="panel-heading"><h3 class="panel-title"><i class="fa fa-pencil"></i> <span id="psf-title"></span> <small class="text-muted">{{ text_source }}: {{ source_name }}</small></h3></div>
+      <div class="panel-body">
+        <ul class="nav nav-tabs">
+          <li class="active"><a href="#psf-tab-general" data-toggle="tab">{{ tab_general }}</a></li>
+          <li><a href="#psf-tab-values" data-toggle="tab">{{ tab_values }}</a></li>
+          <li><a href="#psf-tab-categories" data-toggle="tab">{{ tab_categories }}</a></li>
+        </ul>
+        <div class="tab-content">
+
+          {# --- Общие --- #}
+          <div class="tab-pane active form-horizontal" id="psf-tab-general">
+            <ul class="nav nav-tabs" id="psf-lang-tabs"></ul>
+            <div class="tab-content" id="psf-lang-panes"></div>
+            <hr>
+            <div class="form-group">
+              <label class="col-sm-3 control-label" for="psf-code">{{ entry_code }}</label>
+              <div class="col-sm-9"><input type="text" id="psf-code" class="form-control"><p class="help-block">{{ help_code }}</p><div class="text-danger" data-err="code"></div></div>
+            </div>
+            <div class="form-group">
+              <label class="col-sm-3 control-label" for="psf-widget">{{ entry_widget }}</label>
+              <div class="col-sm-9"><select id="psf-widget" class="form-control"></select></div>
+            </div>
+            <div class="form-group">
+              <label class="col-sm-3 control-label" for="psf-sort">{{ column_sort }}</label>
+              <div class="col-sm-9"><input type="number" id="psf-sort" class="form-control"></div>
+            </div>
+            <div class="form-group" data-only="list">
+              <label class="col-sm-3 control-label" for="psf-value-sort">{{ entry_value_sort }}</label>
+              <div class="col-sm-9"><select id="psf-value-sort" class="form-control">
+                <option value="auto">{{ option_value_sort_auto }}</option>
+                <option value="name">{{ option_value_sort_name }}</option>
+              </select></div>
+            </div>
+            <div class="form-group" data-only="attribute">
+              <label class="col-sm-3 control-label" for="psf-separators">{{ entry_facet_separators }}</label>
+              <div class="col-sm-9"><input type="text" id="psf-separators" class="form-control" placeholder=", / ;"><p class="help-block">{{ help_facet_separators }}</p></div>
+            </div>
+            <div class="form-group" data-only="range-attribute">
+              <label class="col-sm-3 control-label" for="psf-multiplier">{{ entry_unit_multiplier }}</label>
+              <div class="col-sm-9"><input type="number" step="any" id="psf-multiplier" class="form-control"><p class="help-block">{{ help_unit_multiplier }}</p></div>
+            </div>
+            <div class="form-group" data-only="range">
+              <label class="col-sm-3 control-label" for="psf-decimals">{{ entry_decimals }}</label>
+              <div class="col-sm-9"><input type="number" min="0" max="4" id="psf-decimals" class="form-control"></div>
+            </div>
+            <div class="form-group" data-only="stock">
+              <label class="col-sm-3 control-label" for="psf-stock-mode">{{ entry_stock_mode }}</label>
+              <div class="col-sm-9">
+                <select id="psf-stock-mode" class="form-control">
+                  <option value="quantity">{{ option_stock_mode_quantity }}</option>
+                  <option value="status">{{ option_stock_mode_status }}</option>
+                </select>
+                <p class="help-block">{{ help_stock_mode }}</p>
+              </div>
+            </div>
+            <div class="form-group" data-only="stock">
+              <label class="col-sm-3 control-label" for="psf-instock-status">{{ entry_instock_status }}</label>
+              <div class="col-sm-9">
+                <select id="psf-instock-status" class="form-control">
+                  <option value="0">{{ text_none }}</option>
+                  {% for st in stock_statuses %}<option value="{{ st.id }}">{{ st.name|e }}</option>{% endfor %}
+                </select>
+                <p class="help-block">{{ help_instock_status }}</p>
+              </div>
+            </div>
+            <div class="form-group" data-only="stock">
+              <label class="col-sm-3 control-label" for="psf-text-instock">{{ entry_text_instock }}</label>
+              <div class="col-sm-9"><input type="text" id="psf-text-instock" class="form-control"></div>
+            </div>
+            <div class="form-group" data-only="stock">
+              <label class="col-sm-3 control-label" for="psf-text-outofstock">{{ entry_text_outofstock }}</label>
+              <div class="col-sm-9"><input type="text" id="psf-text-outofstock" class="form-control"></div>
+            </div>
+            <div class="form-group">
+              <div class="col-sm-9 col-sm-offset-3">
+                <div class="checkbox"><label><input type="checkbox" id="psf-status"> {{ entry_status }}</label></div>
+                <div class="checkbox"><label><input type="checkbox" id="psf-collapsed"> {{ entry_collapsed }}</label></div>
+                <div class="checkbox" data-only="list"><label><input type="checkbox" id="psf-seo-index"> {{ entry_seo_index }}</label> <span class="text-muted">— {{ help_seo_index }}</span></div>
+                <div class="checkbox" data-only="option"><label><input type="checkbox" id="psf-in-stock-only"> {{ entry_in_stock_only }}</label> <span class="text-muted">— {{ help_in_stock_only }}</span></div>
+                <div class="checkbox"><label><input type="checkbox" id="psf-category-mode"> {{ entry_category_mode }}</label><p class="help-block">{{ help_category_mode }}</p></div>
+                <div class="checkbox"><label><input type="checkbox" id="psf-rest-only"> {{ entry_rest_only }}</label><p class="help-block">{{ help_rest_only }}</p></div>
+              </div>
+            </div>
+          </div>
+
+          {# --- Значения --- #}
+          <div class="tab-pane" id="psf-tab-values">
+            {% if has_values %}
+            <p class="text-muted">{{ help_values }}{% if is_custom %} {{ help_custom_values }}{% endif %}</p>
+            <div class="row" style="margin-bottom: 10px;">
+              <div class="col-sm-5"><input type="text" id="psf-v-search" class="form-control" placeholder="{{ entry_search_value }}"></div>
+              <div class="col-sm-3"><select id="psf-v-show" class="form-control">
+                <option value="all">{{ text_show_all }}</option>
+                <option value="hidden">{{ text_show_hidden }}</option>
+                <option value="alias">{{ text_show_alias }}</option>
+                <option value="empty">{{ text_show_empty }}</option>
+              </select></div>
+              {% if is_custom and can_modify %}
+              <div class="col-sm-4"><div class="input-group">
+                <input type="text" id="psf-v-new" class="form-control" placeholder="{{ entry_new_value }}">
+                <span class="input-group-btn"><button type="button" id="psf-v-add" class="btn btn-success" title="{{ button_add_value }}"><i class="fa fa-plus"></i></button></span>
+              </div></div>
+              {% endif %}
+            </div>
+            <div class="table-responsive">
+              <table class="table table-condensed table-hover" id="psf-values">
+                <thead><tr>
+                  <th style="width: 1px;"><input type="checkbox" id="psf-v-all"></th>
+                  <th>{{ column_value }}</th>
+                  <th>{{ column_slug }}</th>
+                  <th style="width: 150px;">{{ column_color }}</th>
+                  <th style="width: 70px;">{{ column_image }}</th>
+                  <th style="width: 80px;">{{ column_sort }}</th>
+                  <th class="text-center">{{ column_pinned }}</th>
+                  <th class="text-center">{{ column_hidden }}</th>
+                  <th class="text-right">{{ column_products }}</th>
+                  <th></th>
+                </tr></thead>
+                <tbody></tbody>
+              </table>
+            </div>
+            <div class="row">
+              <div class="col-sm-6" id="psf-v-merge" style="display: none;">
+                {% if can_modify %}
+                <div class="input-group">
+                  <span class="input-group-addon">{{ text_merge_into }}</span>
+                  <select id="psf-v-target" class="form-control"></select>
+                  <span class="input-group-btn"><button type="button" id="psf-v-merge-btn" class="btn btn-warning"><i class="fa fa-compress"></i> {{ button_merge }}</button></span>
+                </div>
+                {% endif %}
+              </div>
+              <div class="col-sm-6 text-right pull-right"><ul class="pagination" id="psf-v-pages" style="margin: 0;"></ul> <span class="text-muted" id="psf-v-total"></span></div>
+            </div>
+            {% else %}
+            <div class="alert alert-info">{{ text_no_values_tab }}</div>
+            {% endif %}
+          </div>
+
+          {# --- Категории --- #}
+          <div class="tab-pane" id="psf-tab-categories">
+            <p class="text-muted">{{ help_categories }}</p>
+            <table class="table table-condensed" id="psf-cats">
+              <thead><tr>
+                <th>{{ column_category }}</th>
+                <th style="width: 150px;">{{ column_visibility }}</th>
+                <th style="width: 110px;">{{ column_sort }}</th>
+                <th style="width: 150px;">{{ column_collapsed }}</th>
+                <th style="width: 150px;">{{ column_widget }}</th>
+                <th style="width: 1px;"></th>
+              </tr></thead>
+              <tbody></tbody>
+            </table>
+            <p id="psf-cats-empty" class="text-muted">{{ text_no_categories }}</p>
+            <div style="position: relative; max-width: 480px;">
+              <input type="text" id="psf-cat-add" class="form-control" autocomplete="off" placeholder="{{ entry_add_category }}">
+              <ul id="psf-cat-ac" class="dropdown-menu" style="width: 100%;"></ul>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+    {{ support_footer }}
+  </div>
+</div>
+<script>
+(function () {
+  var facet = {{ facet_json }};
+  var languages = {{ languages_json }};
+  var widgets = {{ widgets_json }};
+  var canModify = {{ can_modify ? 'true' : 'false' }}, isCustom = {{ is_custom ? 'true' : 'false' }}, hasValues = {{ has_values ? 'true' : 'false' }};
+  var placeholder = '{{ placeholder|e('js') }}';
+  var urls = { saveFacet: '{{ url_save_facet|e('js') }}', values: '{{ url_values|e('js') }}', saveValues: '{{ url_save_values|e('js') }}',
+    merge: '{{ url_merge|e('js') }}', unmerge: '{{ url_unmerge|e('js') }}', addValue: '{{ url_add_value|e('js') }}',
+    deleteValue: '{{ url_delete_value|e('js') }}', saveCategories: '{{ url_save_categories|e('js') }}', cat: '{{ url_category_ac|e('js') }}' };
+  var T = { name: '{{ entry_name|e('js') }}', hint: '{{ entry_hint|e('js') }}', prefix: '{{ entry_prefix|e('js') }}', suffix: '{{ entry_suffix|e('js') }}',
+    affix: '{{ help_affix|e('js') }}', alias: '{{ text_alias_of|e('js') }}', unmerge: '{{ button_unmerge|e('js') }}', del: '{{ button_delete|e('js') }}',
+    inherit: '{{ text_inherit|e('js') }}', show: '{{ text_show|e('js') }}', hide: '{{ text_hide|e('js') }}', yes: '{{ text_yes|e('js') }}', no: '{{ text_no|e('js') }}',
+    confirmCode: '{{ text_confirm_code|e('js') }}', confirmSlug: '{{ text_confirm_slug|e('js') }}', confirmDelete: '{{ text_confirm_delete_value|e('js') }}',
+    confirmMerge: '{{ text_confirm_merge|e('js') }}', unsaved: '{{ text_unsaved|e('js') }}', reindex: '{{ text_reindex_needed|e('js') }}' };
+
+  function $(id) { return document.getElementById(id); }
+  function el(tag, attrs, html) { var e = document.createElement(tag); Object.keys(attrs || {}).forEach(function (k) { e.setAttribute(k, attrs[k]); }); if (html != null) e.innerHTML = html; return e; }
+  function esc(s) { var d = document.createElement('div'); d.textContent = s == null ? '' : String(s); return d.innerHTML.replace(/"/g, '&quot;'); }
+  function get(url) { return fetch(url, { credentials: 'same-origin' }).then(function (r) { return r.json(); }); }
+  function post(url, body) { return fetch(url, { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }).then(function (r) { return r.json(); }); }
+  function alertBox(type, text) { var b = $('psf-alert'); b.innerHTML = ''; b.appendChild(el('div', { 'class': 'alert alert-' + type }, esc(text))); window.scrollTo(0, 0); }
+  function each(sel, fn, root) { Array.prototype.forEach.call((root || document).querySelectorAll(sel), fn); }
+  var S = facet.settings || {};
+  var isRange = facet.kind === 1;
+
+  /* --- Общие --- */
+  var defLang = languages.length ? languages[0].language_id : 0;
+  $('psf-title').textContent = (facet.description[{{ config_language_id|default(0) }}] || facet.description[defLang] || {}).name || facet.code;
+  languages.forEach(function (l, i) {
+    var d = facet.description[l.language_id] || {};
+    $('psf-lang-tabs').appendChild(el('li', i ? {} : { 'class': 'active' }, '<a href="#psf-lang-' + l.language_id + '" data-toggle="tab">' + esc(l.name) + '</a>'));
+    var pane = el('div', { 'class': 'tab-pane' + (i ? '' : ' active'), id: 'psf-lang-' + l.language_id, style: 'padding-top: 15px;' });
+    function field(key, label, help) {
+      var id = 'psf-' + key + '-' + l.language_id;
+      return '<div class="form-group"><label class="col-sm-3 control-label" for="' + id + '">' + esc(label) + '</label><div class="col-sm-9">'
+        + '<input type="text" id="' + id + '" class="form-control" value="' + esc(d[key] || '') + '">' + (help ? '<p class="help-block">' + esc(help) + '</p>' : '') + '</div></div>';
+    }
+    pane.innerHTML = field('name', T.name) + field('hint', T.hint) + field('prefix', T.prefix) + field('suffix', T.suffix, T.affix);
+    $('psf-lang-panes').appendChild(pane);
+  });
+  $('psf-code').value = facet.code;
+  widgets.concat(widgets.indexOf(facet.widget) < 0 ? [facet.widget] : []).forEach(function (w) {
+    $('psf-widget').appendChild(el('option', { value: w }, esc(w)));
+  });
+  $('psf-widget').value = facet.widget;
+  $('psf-sort').value = facet.sort_order;
+  $('psf-value-sort').value = S.value_sort === 'name' ? 'name' : 'auto';
+  $('psf-separators').value = (S.separators || []).join(' ');
+  $('psf-multiplier').value = S.unit_multiplier || 1;
+  $('psf-decimals').value = S.decimals || 0;
+  $('psf-text-instock').value = S.text_instock || '';
+  $('psf-text-outofstock').value = S.text_outofstock || '';
+  $('psf-stock-mode').value = S.mode === 'status' ? 'status' : 'quantity';
+  $('psf-instock-status').value = String(S.instock_status || 0);
+  $('psf-status').checked = !!facet.status;
+  $('psf-collapsed').checked = !!S.collapsed;
+  $('psf-seo-index').checked = !!facet.seo_index;
+  $('psf-in-stock-only').checked = !!S.in_stock_only;
+  $('psf-category-mode').checked = !!facet.category_mode;
+  $('psf-rest-only').checked = !!S.rest_only;
+  // Поля, которые есть не у всех источников.
+  each('[data-only]', function (n) {
+    var only = n.getAttribute('data-only'), show = {
+      list: !isRange && facet.source !== 'stock', attribute: facet.source === 'attribute' && !isRange, range: isRange,
+      'range-attribute': isRange && facet.source === 'attribute', stock: facet.source === 'stock', option: facet.source === 'option'
+    }[only];
+    n.style.display = show ? '' : 'none';
+  });
+
+  function generalPayload() {
+    var description = {};
+    languages.forEach(function (l) {
+      description[l.language_id] = {};
+      ['name', 'hint', 'prefix', 'suffix'].forEach(function (k) { description[l.language_id][k] = $('psf-' + k + '-' + l.language_id).value; });
+    });
+    return {
+      facet_id: facet.facet_id, code: $('psf-code').value.trim(), widget: $('psf-widget').value, sort_order: $('psf-sort').value,
+      status: $('psf-status').checked ? 1 : 0, seo_index: $('psf-seo-index').checked ? 1 : 0, category_mode: $('psf-category-mode').checked ? 1 : 0,
+      settings: {
+        collapsed: $('psf-collapsed').checked ? 1 : 0, value_sort: $('psf-value-sort').value, separators: $('psf-separators').value,
+        unit_multiplier: $('psf-multiplier').value, decimals: $('psf-decimals').value, in_stock_only: $('psf-in-stock-only').checked ? 1 : 0,
+        text_instock: $('psf-text-instock').value, text_outofstock: $('psf-text-outofstock').value,
+        mode: $('psf-stock-mode').value, instock_status: $('psf-instock-status').value, rest_only: $('psf-rest-only').checked ? 1 : 0
+      },
+      description: description
+    };
+  }
+
+  /* --- Значения --- */
+  var vPage = 1, vTimer;
+  function rowState(tr) {
+    var q = function (n) { return tr.querySelector('[data-f="' + n + '"]'); };
+    return { value_id: +tr.getAttribute('data-id'), name: q('name').value, slug: q('slug').value.trim(), color: q('color').value.trim(),
+      image: q('image').value, sort_order: +q('sort_order').value || 0, pinned: q('pinned').checked ? 1 : 0, hidden_manual: q('hidden_manual').checked ? 1 : 0 };
+  }
+  function changedRows() {
+    var out = [];
+    each('#psf-values tbody tr[data-id]:not([data-alias])', function (tr) {
+      var now = rowState(tr);
+      if (JSON.stringify(now) !== tr.getAttribute('data-orig')) { out.push({ tr: tr, data: now }); }
+    });
+    return out;
+  }
+  function loadValues(page) {
+    if (!hasValues) { return; }
+    if (changedRows().length && !confirm(T.unsaved)) { return; }
+    vPage = page || 1;
+    var q = urls.values + '&facet_id=' + facet.facet_id + '&page=' + vPage + '&show=' + $('psf-v-show').value + '&filter_name=' + encodeURIComponent($('psf-v-search').value);
+    get(q).then(function (json) {
+      var tb = document.querySelector('#psf-values tbody'); tb.innerHTML = '';
+      json.values.forEach(function (v) { tb.appendChild(valueRow(v)); });
+      $('psf-v-total').textContent = json.total ? '(' + json.total + ')' : '';
+      var pages = $('psf-v-pages'); pages.innerHTML = '';
+      for (var i = 1; i <= json.pages && json.pages > 1; i++) {
+        if (json.pages > 12 && i > 2 && i < json.pages - 1 && Math.abs(i - json.page) > 2) { if (!pages.lastChild || pages.lastChild.textContent !== '…') pages.appendChild(el('li', { 'class': 'disabled' }, '<span>…</span>')); continue; }
+        var li = el('li', i === json.page ? { 'class': 'active' } : {}, '<a href="#" data-page="' + i + '">' + i + '</a>');
+        pages.appendChild(li);
+      }
+      $('psf-v-all').checked = false; updateMerge();
+    });
+  }
+  function valueRow(v) {
+    var tr = el('tr', { 'data-id': v.value_id });
+    var dis = canModify ? '' : ' disabled';
+    if (v.alias_of) {
+      tr.setAttribute('data-alias', '1'); tr.className = 'text-muted';
+      tr.innerHTML = '<td></td><td>' + esc(v.name) + ' <small>' + esc(T.alias) + ' ' + esc(v.alias_name) + '</small></td><td>' + esc(v.slug) + '</td><td colspan="6"></td>'
+        + '<td class="text-right">' + (canModify ? '<button type="button" class="btn btn-default btn-xs" data-act="unmerge"><i class="fa fa-expand"></i> ' + esc(T.unmerge) + '</button>' : '') + '</td>';
+      return tr;
+    }
+    var thumb = v.thumb || placeholder;
+    tr.innerHTML = '<td><input type="checkbox" data-pick></td>'
+      + '<td><input type="text" class="form-control input-sm" data-f="name" value="' + esc(v.name) + '"' + dis + '></td>'
+      + '<td><input type="text" class="form-control input-sm" data-f="slug" value="' + esc(v.slug) + '" data-slug="' + esc(v.slug) + '"' + dis + '></td>'
+      + '<td><div class="input-group input-group-sm"><span class="input-group-addon" style="padding: 0 4px;"><input type="color" data-picker value="' + esc(v.color || '#ffffff') + '" style="width: 24px; height: 22px; border: 0; padding: 0; background: none;"' + dis + '></span>'
+      + '<input type="text" class="form-control" data-f="color" value="' + esc(v.color) + '" placeholder="#rrggbb"' + dis + '></div></td>'
+      + '<td><a href="" id="psf-thumb-' + v.value_id + '" data-toggle="image" class="img-thumbnail"><img src="' + esc(thumb) + '" data-placeholder="' + esc(placeholder) + '" style="width: 40px; height: 40px;"></a>'
+      + '<input type="hidden" data-f="image" id="psf-image-' + v.value_id + '" value="' + esc(v.image) + '"></td>'
+      + '<td><input type="number" class="form-control input-sm" data-f="sort_order" value="' + v.sort_order + '"' + dis + '></td>'
+      + '<td class="text-center"><input type="checkbox" data-f="pinned"' + (v.pinned ? ' checked' : '') + dis + '></td>'
+      + '<td class="text-center"><input type="checkbox" data-f="hidden_manual"' + (v.hidden_manual ? ' checked' : '') + dis + '></td>'
+      + '<td class="text-right">' + v.products + '</td>'
+      + '<td class="text-right">' + (canModify && isCustom ? '<button type="button" class="btn btn-danger btn-xs" data-act="delete" title="' + esc(T.del) + '"><i class="fa fa-trash-o"></i></button>' : '') + '</td>';
+    tr.setAttribute('data-orig', JSON.stringify(rowState(tr)));
+    return tr;
+  }
+  function updateMerge() {
+    var picked = [];
+    each('#psf-values [data-pick]:checked', function (c) { var tr = c.closest('tr'); picked.push({ id: tr.getAttribute('data-id'), name: tr.querySelector('[data-f="name"]').value }); });
+    var box = $('psf-v-merge'); if (!box) { return; }
+    box.style.display = picked.length > 1 ? '' : 'none';
+    var sel = $('psf-v-target'); if (!sel) { return; }
+    sel.innerHTML = '';
+    picked.forEach(function (p) { sel.appendChild(el('option', { value: p.id }, esc(p.name))); });
+  }
+  if (hasValues) {
+    $('psf-v-search').addEventListener('input', function () { clearTimeout(vTimer); vTimer = setTimeout(function () { loadValues(1); }, 300); });
+    $('psf-v-show').addEventListener('change', function () { loadValues(1); });
+    $('psf-v-pages').addEventListener('click', function (e) { var a = e.target.closest('[data-page]'); if (a) { e.preventDefault(); loadValues(+a.getAttribute('data-page')); } });
+    $('psf-v-all').addEventListener('change', function () { var on = this.checked; each('#psf-values [data-pick]', function (c) { c.checked = on; }); updateMerge(); });
+    var table = $('psf-values');
+    table.addEventListener('change', function (e) {
+      if (e.target.hasAttribute('data-pick')) { updateMerge(); }
+      if (e.target.hasAttribute('data-picker')) { e.target.closest('td').querySelector('[data-f="color"]').value = e.target.value; }
+      if (e.target.getAttribute('data-f') === 'color' && /^#[0-9a-f]{6}$/i.test(e.target.value)) { e.target.closest('td').querySelector('[data-picker]').value = e.target.value; }
+    });
+    table.addEventListener('click', function (e) {
+      var btn = e.target.closest('[data-act]'); if (!btn) { return; }
+      var tr = btn.closest('tr'), id = +tr.getAttribute('data-id'), act = btn.getAttribute('data-act');
+      if (act === 'delete' && !confirm(T.confirmDelete)) { return; }
+      post(act === 'delete' ? urls.deleteValue : urls.unmerge, { facet_id: facet.facet_id, value_id: id }).then(function (json) {
+        if (json.error) { alertBox('danger', json.error); return; }
+        alertBox('success', json.success); loadValues(vPage);
+      });
+    });
+    var mergeBtn = $('psf-v-merge-btn');
+    if (mergeBtn) mergeBtn.addEventListener('click', function () {
+      var ids = []; each('#psf-values [data-pick]:checked', function (c) { ids.push(+c.closest('tr').getAttribute('data-id')); });
+      if (!confirm(T.confirmMerge)) { return; }
+      post(urls.merge, { facet_id: facet.facet_id, target: +$('psf-v-target').value, ids: ids }).then(function (json) {
+        if (json.error) { alertBox('danger', json.error); return; }
+        alertBox('success', json.success); loadValues(vPage);
+      });
+    });
+    var addBtn = $('psf-v-add');
+    if (addBtn) {
+      var add = function () {
+        var name = $('psf-v-new').value.trim(); if (!name) { return; }
+        post(urls.addValue, { facet_id: facet.facet_id, name: name }).then(function (json) {
+          if (json.error) { alertBox('danger', json.error); return; }
+          $('psf-v-new').value = ''; loadValues(1);
+        });
+      };
+      addBtn.addEventListener('click', add);
+      $('psf-v-new').addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); add(); } });
+    }
+    // Вкладка открыта впервые — тогда и грузим.
+    var loaded = false;
+    $('psf-tab-values').closest('.panel-body').querySelector('a[href="#psf-tab-values"]').addEventListener('click', function () { if (!loaded) { loaded = true; loadValues(1); } });
+  }
+
+  /* --- Категории --- */
+  function sel(options, value) {
+    return '<select class="form-control input-sm">' + options.map(function (o) { return '<option value="' + esc(o[0]) + '"' + (String(o[0]) === String(value) ? ' selected' : '') + '>' + esc(o[1]) + '</option>'; }).join('') + '</select>';
+  }
+  function catRow(c) {
+    var tr = el('tr', { 'data-cat': c.category_id });
+    tr.innerHTML = '<td>' + esc(c.name) + '</td>'
+      + '<td data-c="status">' + sel([[1, T.show], [0, T.hide]], c.status) + '</td>'
+      + '<td data-c="sort_order"><input type="number" class="form-control input-sm" placeholder="' + esc(T.inherit) + '" value="' + esc(c.sort_order) + '"></td>'
+      + '<td data-c="collapsed">' + sel([['', T.inherit], [1, T.yes], [0, T.no]], c.collapsed) + '</td>'
+      + '<td data-c="widget">' + sel([['', T.inherit]].concat(widgets.map(function (w) { return [w, w]; })), c.widget) + '</td>'
+      + '<td><button type="button" class="btn btn-danger btn-xs" data-act="remove"><i class="fa fa-minus-circle"></i></button></td>';
+    return tr;
+  }
+  function catsChanged() { $('psf-cats-empty').style.display = document.querySelector('#psf-cats tbody tr') ? 'none' : ''; }
+  facet.categories.forEach(function (c) { document.querySelector('#psf-cats tbody').appendChild(catRow(c)); });
+  catsChanged();
+  $('psf-cats').addEventListener('click', function (e) { var b = e.target.closest('[data-act="remove"]'); if (b) { b.closest('tr').remove(); catsChanged(); } });
+  var ac = $('psf-cat-ac'), acTimer;
+  $('psf-cat-add').addEventListener('input', function () {
+    clearTimeout(acTimer);
+    var q = this.value;
+    acTimer = setTimeout(function () {
+      get(urls.cat + '&filter_name=' + encodeURIComponent(q)).then(function (items) {
+        ac.innerHTML = '';
+        items.forEach(function (it) {
+          var li = el('li', {}, '<a href="#">' + esc(it.name.replace(/&gt;/g, '>').replace(/&amp;/g, '&')) + '</a>');
+          li.addEventListener('mousedown', function (e) {
+            e.preventDefault();
+            if (!document.querySelector('#psf-cats tr[data-cat="' + it.category_id + '"]')) {
+              document.querySelector('#psf-cats tbody').appendChild(catRow({ category_id: +it.category_id, name: li.textContent, status: 1, sort_order: '', collapsed: '', widget: '' }));
+            }
+            $('psf-cat-add').value = ''; ac.style.display = 'none'; catsChanged();
+          });
+          ac.appendChild(li);
+        });
+        ac.style.display = items.length ? 'block' : 'none';
+      });
+    }, 250);
+  });
+  $('psf-cat-add').addEventListener('blur', function () { setTimeout(function () { ac.style.display = 'none'; }, 200); });
+  function catsPayload() {
+    var rows = [];
+    each('#psf-cats tbody tr', function (tr) {
+      var v = function (k) { return tr.querySelector('[data-c="' + k + '"] select, [data-c="' + k + '"] input').value; };
+      rows.push({ category_id: +tr.getAttribute('data-cat'), status: +v('status'), sort_order: v('sort_order'), collapsed: v('collapsed'), widget: v('widget') });
+    });
+    return { facet_id: facet.facet_id, rows: rows };
+  }
+
+  /* --- Сохранение всех вкладок --- */
+  var saveBtn = $('psf-save');
+  if (saveBtn) saveBtn.addEventListener('click', function () {
+    var g = generalPayload();
+    if (g.code !== facet.code && !confirm(T.confirmCode)) { return; }
+    var rows = changedRows();
+    if (rows.some(function (r) { return r.data.slug !== r.tr.querySelector('[data-f="slug"]').getAttribute('data-slug'); }) && !confirm(T.confirmSlug)) { return; }
+    each('[data-err]', function (n) { n.textContent = ''; });
+    each('#psf-values tr.danger', function (tr) { tr.classList.remove('danger'); tr.removeAttribute('title'); });
+    var reindex = false;
+    post(urls.saveFacet, g).then(function (json) {
+      if (json.error) { throw new Error(json.error); }
+      facet.code = g.code; reindex = !!json.reindex;
+      return rows.length ? post(urls.saveValues, { facet_id: facet.facet_id, values: rows.map(function (r) { return r.data; }) }) : {};
+    }).then(function (json) {
+      if (json.error) { throw new Error(json.error); }
+      rows.forEach(function (r) {
+        var err = json.errors && json.errors[r.data.value_id];
+        if (err) { r.tr.classList.add('danger'); r.tr.title = err; return; }
+        r.tr.setAttribute('data-orig', JSON.stringify(r.data)); r.tr.querySelector('[data-f="slug"]').setAttribute('data-slug', r.data.slug);
+      });
+      if (json.errors) { throw new Error(Object.keys(json.errors).map(function (k) { return json.errors[k]; }).filter(function (v, i, a) { return a.indexOf(v) === i; }).join(' ')); }
+      return post(urls.saveCategories, catsPayload());
+    }).then(function (json) {
+      if (json.error) { throw new Error(json.error); }
+      alertBox('success', json.success + (reindex ? ' ' + T.reindex : ''));
+    }).catch(function (e) { alertBox('danger', e.message); });
+  });
+})();
+</script>
+{{ footer }}

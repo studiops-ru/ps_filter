@@ -1,0 +1,171 @@
+{#
+  PS Filter — фасеты. Три блока: основные (цена, бренд, наличие, свои, группы фильтров), характеристики, опции.
+  Правка прямо в таблице, сохранение строки AJAX-ом; галочки в заголовке — весь столбец блока сразу.
+#}
+{{ header }}{{ column_left }}
+<div id="content">
+  <div class="page-header">
+    <div class="container-fluid">
+      <div class="pull-right">
+        {% if can_modify %}<button type="button" id="psf-add" class="btn btn-primary"><i class="fa fa-plus"></i> {{ button_add_facet }}</button>{% endif %}
+        <a href="{{ url_index }}" class="btn btn-default"><i class="fa fa-refresh"></i> {{ heading_index }}</a>
+      </div>
+      <h1>{{ heading_facets }}</h1>
+      <ul class="breadcrumb">
+        {% for breadcrumb in breadcrumbs %}<li><a href="{{ breadcrumb.href }}">{{ breadcrumb.text }}</a></li>{% endfor %}
+      </ul>
+    </div>
+  </div>
+  <div class="container-fluid">
+    <div id="psf-alert"></div>
+    <p class="text-muted">{{ help_facets }} {{ help_facet_blocks }}</p>
+    {% if not facets %}<div class="alert alert-info">{{ text_no_facets }}</div>{% endif %}
+    {% for b in blocks %}
+    <div class="panel panel-default" data-block="{{ b.key }}">
+      <div class="panel-heading">
+        <h3 class="panel-title"><i class="fa fa-list"></i> {{ b.title }}
+          <small class="text-muted" style="margin-left: 8px;">{{ text_block_count|format('<span data-on>' ~ b.on ~ '</span>', '<span data-total>' ~ b.count ~ '</span>') }}</small>
+        </h3>
+      </div>
+      <div class="table-responsive">
+        {# Одинаковые ширины столбцов во всех блоках — таблицы стоят ровно друг под другом. #}
+        <table class="table table-hover table-condensed" style="table-layout: fixed; min-width: 1150px;">
+          <thead>
+            <tr>
+              <th style="width: 80px;">{{ column_sort }}</th>
+              <th>{{ column_name }}</th>
+              <th style="width: 170px;">{{ column_code }}</th>
+              <th style="width: 120px;">{{ column_source }}</th>
+              <th style="width: 120px;">{{ column_widget }}</th>
+              <th class="text-center" style="width: 80px;">{{ column_collapsed }}<br><input type="checkbox" data-all="collapsed" title="{{ text_check_all|e }}"{% if not can_modify %} disabled{% endif %}></th>
+              <th class="text-center" style="width: 70px;" title="{{ help_seo_index }}">{{ column_seo_index }}<br><input type="checkbox" data-all="seo_index" title="{{ text_check_all|e }}"{% if not can_modify %} disabled{% endif %}></th>
+              <th class="text-center" style="width: 60px;">{{ column_status }}<br><input type="checkbox" data-all="status" title="{{ text_check_all|e }}"{% if not can_modify %} disabled{% endif %}></th>
+              <th class="text-right" style="width: 80px;">{{ column_values }}</th>
+              <th style="width: 130px;"></th>
+            </tr>
+          </thead>
+          <tbody>
+          {% for f in b.facets %}
+            <tr data-id="{{ f.facet_id }}" data-code="{{ f.code }}">
+              <td><input type="number" class="form-control input-sm" name="sort_order" value="{{ f.sort_order }}"></td>
+              <td><input type="text" class="form-control input-sm" name="name" value="{{ f.name|e }}"></td>
+              <td><input type="text" class="form-control input-sm" name="code" value="{{ f.code }}" title="{{ help_code }}"></td>
+              <td class="text-muted">{{ f.source }}</td>
+              <td>
+                <select class="form-control input-sm" name="widget">
+                  {% for w in f.widgets %}<option value="{{ w }}"{% if w == f.widget %} selected{% endif %}>{{ w }}</option>{% endfor %}
+                  {% if f.widget not in f.widgets %}<option value="{{ f.widget }}" selected>{{ f.widget }}</option>{% endif %}
+                </select>
+              </td>
+              <td class="text-center"><input type="checkbox" name="collapsed"{% if f.collapsed %} checked{% endif %}></td>
+              <td class="text-center">{% if f.kind == 0 %}<input type="checkbox" name="seo_index"{% if f.seo_index %} checked{% endif %}>{% endif %}</td>
+              <td class="text-center"><input type="checkbox" name="status"{% if f.status %} checked{% endif %}></td>
+              <td class="text-right">{{ f.values }}</td>
+              <td class="text-right" style="white-space: nowrap;">
+                <a href="{{ f.edit }}" class="btn btn-default btn-sm" title="{{ button_edit }}"><i class="fa fa-pencil"></i></a>
+                {% if can_modify %}
+                <button type="button" class="btn btn-primary btn-sm" data-act="save" title="{{ button_save }}"><i class="fa fa-save"></i></button>
+                <button type="button" class="btn btn-danger btn-sm" data-act="delete" title="{{ button_delete }}"><i class="fa fa-trash-o"></i></button>
+                {% endif %}
+              </td>
+            </tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    {% endfor %}
+    {{ support_footer }}
+  </div>
+</div>
+<script>
+(function () {
+  function alertBox(type, text) {
+    var box = document.getElementById('psf-alert'); box.innerHTML = '';
+    var d = document.createElement('div'); d.className = 'alert alert-' + type; d.textContent = text; box.appendChild(d);
+  }
+  function post(url, body) {
+    return fetch(url, { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }, body: JSON.stringify(body) }).then(function (r) { return r.json(); });
+  }
+  function each(sel, fn, root) { Array.prototype.forEach.call((root || document).querySelectorAll(sel), fn); }
+
+  var add = document.getElementById('psf-add');
+  if (add) add.addEventListener('click', function () {
+    var name = prompt('{{ text_new_facet_name|e('js') }}');
+    if (!name || !name.trim()) return;
+    post('{{ url_add|e('js') }}', { name: name.trim() }).then(function (json) {
+      if (json.error) { alertBox('danger', json.error); return; }
+      location.href = json.redirect;
+    });
+  });
+
+  // Сохранение и удаление строки — в любом блоке.
+  document.getElementById('content').addEventListener('click', function (e) {
+    var btn = e.target.closest('[data-act]'); if (!btn) return;
+    var tr = btn.closest('tr'), id = tr.getAttribute('data-id'), block = tr.closest('[data-block]');
+    if (btn.getAttribute('data-act') === 'delete') {
+      if (!confirm('{{ text_confirm_delete|e('js') }}')) return;
+      post('{{ url_delete|e('js') }}', { facet_id: id }).then(function (json) {
+        if (json.error) { alertBox('danger', json.error); return; }
+        tr.parentNode.removeChild(tr); syncBlock(block); alertBox('success', json.success);
+      });
+      return;
+    }
+    var v = function (n) { return tr.querySelector('[name="' + n + '"]'); };
+    var code = v('code').value.trim();
+    if (code !== tr.getAttribute('data-code') && !confirm('{{ text_confirm_code|e('js') }}')) return;
+    post('{{ url_save|e('js') }}', {
+      facet_id: id, name: v('name').value, code: code, widget: v('widget').value,
+      sort_order: v('sort_order').value, collapsed: v('collapsed').checked ? 1 : 0, seo_index: v('seo_index') && v('seo_index').checked ? 1 : 0, status: v('status').checked ? 1 : 0
+    }).then(function (json) {
+      if (json.error) { alertBox('danger', json.error); return; }
+      tr.setAttribute('data-code', code);
+      tr.setAttribute('data-saved-status', v('status').checked ? 1 : 0);
+      syncBlock(block);
+      alertBox('success', json.success + (json.reindex ? ' {{ text_need_reindex|e('js') }}' : ''));
+    });
+  });
+
+  // Галочка в заголовке столбца блока: отметить или снять у всех фасетов блока и сразу сохранить.
+  // Состояние: все отмечены — галочка, часть — «минус» (indeterminate), ни одного — пусто.
+  function rows(block, field) { return Array.prototype.slice.call(block.querySelectorAll('tbody [name="' + field + '"]')); }
+  function syncBlock(block) {
+    each('[data-all]', function (all) {
+      var boxes = rows(block, all.getAttribute('data-all')), on = boxes.filter(function (b) { return b.checked; }).length;
+      all.checked = boxes.length > 0 && on === boxes.length;
+      all.indeterminate = on > 0 && on < boxes.length;
+      if (!boxes.length) { all.disabled = true; }
+    }, block);
+    // Счетчик «включено» — по сохраненному состоянию строк, а не по неснятым галочкам.
+    var trs = block.querySelectorAll('tbody tr'), saved = 0;
+    Array.prototype.forEach.call(trs, function (tr) { if (tr.getAttribute('data-saved-status') === '1') { saved++; } });
+    var onEl = block.querySelector('[data-on]'), totalEl = block.querySelector('[data-total]');
+    if (onEl) { onEl.textContent = saved; }
+    if (totalEl) { totalEl.textContent = trs.length; }
+  }
+  each('[data-block]', function (block) {
+    each('tbody tr', function (tr) { tr.setAttribute('data-saved-status', tr.querySelector('[name="status"]').checked ? 1 : 0); }, block);
+    syncBlock(block);
+    block.querySelector('tbody').addEventListener('change', function () { syncBlock(block); });
+    each('[data-all]', function (all) {
+      all.addEventListener('change', function () {
+        var field = all.getAttribute('data-all'), value = all.checked ? 1 : 0, boxes = rows(block, field);
+        if (field === 'status' && !confirm(value ? '{{ text_confirm_all_on|e('js') }}' : '{{ text_confirm_all_off|e('js') }}')) { syncBlock(block); return; }
+        var ids = boxes.map(function (b) { return b.closest('tr').getAttribute('data-id'); });
+        all.disabled = true;
+        post('{{ url_bulk|e('js') }}', { field: field, value: value, ids: ids }).then(function (json) {
+          all.disabled = false;
+          if (json.error) { alertBox('danger', json.error); syncBlock(block); return; }
+          boxes.forEach(function (b) {
+            b.checked = !!value;
+            if (field === 'status') { b.closest('tr').setAttribute('data-saved-status', value); }
+          });
+          syncBlock(block);
+          alertBox('success', json.success + (json.reindex ? ' {{ text_need_reindex|e('js') }}' : ''));
+        }).catch(function (e) { all.disabled = false; alertBox('danger', String(e)); syncBlock(block); });
+      });
+    }, block);
+  });
+})();
+</script>
+{{ footer }}

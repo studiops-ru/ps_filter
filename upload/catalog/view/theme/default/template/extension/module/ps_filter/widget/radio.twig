@@ -1,0 +1,14 @@
+{# Одиночный выбор. Повторный клик по выбранному значению снимает его (href уже без него). #}
+<ul class="psf-values psf-values--radio">
+  {% for value in facet.values %}
+  <li class="psf-value{{ value.selected ? ' is-selected' }}{{ value.disabled ? ' is-disabled' }}{{ value.extra ? ' is-extra' }}">
+    <label class="psf-value__label">
+      <input class="psf-value__input" type="radio" name="psf-{{ facet.code }}" data-psf-href="{{ value.href|e }}"{{ value.selected ? ' checked' }}{{ value.disabled ? ' disabled' }}>
+      {# Индексируемое состояние (посадочная или SEO-шаблон) — настоящая ссылка для поисковика. #}
+      {% if value.link %}<a class="psf-value__name psf-value__link" href="{{ value.href|e }}" data-psf-link>{{ value.name|e }}</a>{% else %}<span class="psf-value__name">{{ value.name|e }}</span>{% endif %}
+      {% if value.count is not null %}<span class="psf-value__count">{{ value.count }}</span>{% endif %}
+    </label>
+  </li>
+  {% endfor %}
+</ul>
+{% if facet.more %}<button type="button" class="psf-more" data-psf-more data-psf-less-text="{{ text_less }}">{{ text_more }} ({{ facet.more }})</button>{% endif %}

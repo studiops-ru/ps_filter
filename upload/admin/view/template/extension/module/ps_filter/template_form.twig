@@ -1,0 +1,114 @@
+{# PS Filter — SEO-шаблон. #}
+{{ header }}{{ column_left }}
+<div id="content">
+  <div class="page-header">
+    <div class="container-fluid">
+      <div class="pull-right">
+        {% if can_modify %}<button type="submit" form="psf-tpl" class="btn btn-primary" title="{{ button_save }}"><i class="fa fa-save"></i></button>{% endif %}
+        <a href="{{ cancel }}" class="btn btn-default" title="{{ button_back }}"><i class="fa fa-reply"></i></a>
+      </div>
+      <h1>{{ heading_templates }}</h1>
+      <ul class="breadcrumb">{% for b in breadcrumbs %}<li><a href="{{ b.href }}">{{ b.text }}</a></li>{% endfor %}</ul>
+    </div>
+  </div>
+  <div class="container-fluid">
+    {% if error.warning %}<div class="alert alert-danger">{{ error.warning }}</div>{% endif %}
+    <div class="panel panel-default">
+      <div class="panel-body">
+        <form id="psf-tpl" method="post" action="{{ action }}" class="form-horizontal">
+          <div class="form-group">
+            <label class="col-sm-3 control-label">{{ column_language }}</label>
+            <div class="col-sm-9"><select name="language_id" class="form-control">{% for l in languages %}<option value="{{ l.language_id }}"{% if l.language_id == language_id %} selected{% endif %}>{{ l.name }}</option>{% endfor %}</select></div>
+          </div>
+          <div class="form-group">
+            <label class="col-sm-3 control-label">{{ entry_scope }}</label>
+            <div class="col-sm-9">
+              <label class="radio-inline"><input type="radio" name="scope_type" value="1"{% if scope_type != 2 %} checked{% endif %}> {{ text_scope_category }}</label>
+              <label class="radio-inline"><input type="radio" name="scope_type" value="2"{% if scope_type == 2 %} checked{% endif %}> {{ text_scope_brand }}</label>
+              <div style="position: relative; margin-top: 6px;">
+                <input type="text" id="psf-scope" class="form-control" value="{{ scope_name|e }}" placeholder="{{ text_any_scope }}" autocomplete="off">
+                <input type="hidden" name="scope_id" id="psf-scope-id" value="{{ scope_id }}">
+                <ul id="psf-scope-ac" class="dropdown-menu" style="width: 100%;"></ul>
+              </div>
+              <p class="help-block">{{ help_template_scope }}</p>
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="col-sm-3 control-label">{{ column_facet }}</label>
+            <div class="col-sm-9">
+              <select name="facet_id" class="form-control">
+                <option value="0">{{ text_any_facet }}</option>
+                {% for f in facets %}<option value="{{ f.facet_id }}"{% if f.facet_id == facet_id %} selected{% endif %}>{{ f.name|e }}</option>{% endfor %}
+              </select>
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="col-sm-3 control-label">{{ entry_template_limits }}</label>
+            <div class="col-sm-9">
+              <div class="row">
+                <div class="col-xs-4"><label class="small">{{ entry_max_facets }}</label><input type="number" min="1" name="max_facets" value="{{ max_facets|e }}" class="form-control"></div>
+                <div class="col-xs-4"><label class="small">{{ entry_max_values }}</label><input type="number" min="1" name="max_values" value="{{ max_values|e }}" class="form-control"></div>
+                <div class="col-xs-4"><label class="small">{{ entry_min_products }}</label><input type="number" min="1" name="min_products" value="{{ min_products|e }}" class="form-control"></div>
+              </div>
+              <p class="help-block">{{ help_template_limits }}</p>
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="col-sm-3 control-label">{{ entry_meta_title }}</label>
+            <div class="col-sm-9"><input type="text" name="title" value="{{ title|e }}" class="form-control">{% if error.title %}<div class="text-danger">{{ error.title }}</div>{% endif %}</div>
+          </div>
+          <div class="form-group">
+            <label class="col-sm-3 control-label">{{ entry_h1 }}</label>
+            <div class="col-sm-9"><input type="text" name="h1" value="{{ h1|e }}" class="form-control"></div>
+          </div>
+          <div class="form-group">
+            <label class="col-sm-3 control-label">{{ entry_meta_description }}</label>
+            <div class="col-sm-9"><input type="text" name="meta_description" value="{{ meta_description|e }}" class="form-control"></div>
+          </div>
+          <div class="form-group">
+            <label class="col-sm-3 control-label">{{ entry_page_text }}</label>
+            <div class="col-sm-9"><textarea name="text" rows="5" class="form-control">{{ text|e }}</textarea><p class="help-block">{{ help_placeholders }}</p></div>
+          </div>
+          <div class="form-group">
+            <label class="col-sm-3 control-label">{{ entry_status }}</label>
+            <div class="col-sm-9">
+              <label class="checkbox-inline"><input type="checkbox" name="status" value="1"{% if status %} checked{% endif %}> {{ text_enabled }}</label>
+              <label class="checkbox-inline"><input type="checkbox" name="index_allowed" value="1"{% if index_allowed %} checked{% endif %}> {{ entry_index_allowed }}</label>
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="col-sm-3 control-label">{{ column_sort }}</label>
+            <div class="col-sm-9"><input type="number" name="sort_order" value="{{ sort_order|e }}" class="form-control"></div>
+          </div>
+        </form>
+      </div>
+    </div>
+    {{ support_footer }}
+  </div>
+</div>
+<script>
+(function () {
+  var input = document.getElementById('psf-scope'), hidden = document.getElementById('psf-scope-id'), ac = document.getElementById('psf-scope-ac'), t;
+  var urls = { 1: '{{ url_category_ac|e('js') }}', 2: '{{ url_manufacturer_ac|e('js') }}' };
+  function type() { return document.querySelector('input[name="scope_type"]:checked').value; }
+  input.addEventListener('input', function () {
+    clearTimeout(t);
+    if (!input.value.trim()) { hidden.value = 0; ac.style.display = 'none'; return; }
+    t = setTimeout(function () {
+      fetch(urls[type()] + '&filter_name=' + encodeURIComponent(input.value), { credentials: 'same-origin' }).then(function (r) { return r.json(); }).then(function (items) {
+        ac.innerHTML = '';
+        items.forEach(function (it) {
+          var li = document.createElement('li'), a = document.createElement('a');
+          a.href = '#'; a.textContent = it.name.replace(/&gt;/g, '>').replace(/&amp;/g, '&'); li.appendChild(a);
+          li.addEventListener('mousedown', function (e) { e.preventDefault(); hidden.value = it.category_id || it.manufacturer_id; input.value = a.textContent; ac.style.display = 'none'; });
+          ac.appendChild(li);
+        });
+        ac.style.display = items.length ? 'block' : 'none';
+      });
+    }, 250);
+  });
+  input.addEventListener('blur', function () { setTimeout(function () { ac.style.display = 'none'; }, 200); });
+  Array.prototype.forEach.call(document.querySelectorAll('input[name="scope_type"]'), function (r) { r.addEventListener('change', function () { input.value = ''; hidden.value = 0; }); });
+})();
+</script>
+{{ footer }}

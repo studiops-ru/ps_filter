@@ -1,0 +1,338 @@
+/*
+ * PS Filter — базовое оформление.
+ *
+ * Как перекрасить под фирменный стиль: переопределите токены в CSS темы, например
+ *   .psf { --psf-accent: #e30613; --psf-radius: 0; --psf-font-size: 15px; }
+ * Правила — одиночные классы (специфичность 0,1,0): сильнее элементных стилей Bootstrap
+ * (label, input), но любое правило темы вида «.psf .psf-value__name» их перекрывает.
+ * Токены по умолчанию берут переменные темы oc_ps (--ocps-*), если они есть.
+ */
+
+.psf {
+  --psf-accent: var(--ocps-brand, #2f6fed);
+  --psf-accent-contrast: var(--ocps-brand-contrast, #fff);
+  --psf-text: var(--ocps-text, #222);
+  --psf-muted: var(--ocps-muted, #6b7079); /* 5:1 на белом, 4,6:1 на --psf-bg-soft (WCAG 1.4.3) */
+  --psf-border: var(--ocps-border, #e3e5e8);
+  --psf-bg: #fff;
+  --psf-bg-soft: #f5f6f8;
+  --psf-radius: var(--ocps-radius, 6px);
+  --psf-gap: 12px;
+  --psf-font-size: 14px;
+  --psf-control: 18px;
+  --psf-max-height: 280px;
+  --psf-z: 1000;
+}
+
+.psf {
+  position: relative;
+  margin-bottom: 20px;
+  font-size: var(--psf-font-size);
+  color: var(--psf-text);
+  background: var(--psf-bg);
+  border: 1px solid var(--psf-border);
+  border-radius: var(--psf-radius);
+}
+.psf.is-loading { opacity: .6; pointer-events: none; transition: opacity .15s; }
+
+.psf__header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: var(--psf-gap); border-bottom: 1px solid var(--psf-border);
+}
+.psf__title { font-weight: 600; font-size: 1.1em; }
+.psf__reset { color: var(--psf-accent); font-size: .9em; }
+.psf__footer { padding: var(--psf-gap); border-top: 1px solid var(--psf-border); color: var(--psf-muted); }
+.psf__total b { color: var(--psf-text); }
+
+/* Выбранные значения */
+.psf-tags { display: flex; flex-wrap: wrap; gap: 6px; padding: var(--psf-gap); border-bottom: 1px solid var(--psf-border); }
+.psf-tag {
+  display: inline-flex; align-items: center; gap: 4px; max-width: 100%;
+  padding: 3px 8px; border-radius: 999px; font-size: .9em;
+  background: var(--psf-bg-soft); color: var(--psf-text); text-decoration: none;
+}
+.psf-tag:hover { color: var(--psf-accent); text-decoration: none; }
+.psf-tag__facet { color: var(--psf-muted); }
+.psf-tag__remove { font-size: 1.2em; line-height: 1; }
+
+/* Фасет */
+.psf-facet { border-bottom: 1px solid var(--psf-border); }
+.psf-facet:last-child { border-bottom: 0; }
+.psf-facet__title {
+  display: flex; align-items: center; justify-content: space-between; width: 100%;
+  padding: var(--psf-gap); border: 0; background: none; color: inherit;
+  font: inherit; font-weight: 600; text-align: left; cursor: pointer;
+}
+.psf-facet__arrow {
+  width: 8px; height: 8px; border-right: 2px solid currentColor; border-bottom: 2px solid currentColor;
+  transform: rotate(45deg); transition: transform .15s; opacity: .6;
+}
+.psf-facet.is-collapsed .psf-facet__arrow { transform: rotate(-45deg); }
+.psf-facet__body { padding: 0 var(--psf-gap) var(--psf-gap); }
+.psf-facet.is-collapsed .psf-facet__body { display: none; }
+
+/* Значения */
+/* Отступ справа — под накладную полосу прокрутки (телефоны, macOS): она не занимает места и иначе ложится на числа. */
+.psf-values { list-style: none; margin: 0; padding: 0 10px 0 0; max-height: var(--psf-max-height); overflow-y: auto; }
+.psf-value { margin: 0; }
+.psf-value.is-extra { display: none; }
+.psf-facet.is-expanded .psf-value.is-extra { display: block; }
+.psf-facet.is-expanded .psf-values { max-height: none; padding-right: 0; }
+.psf-value__label { display: flex; align-items: center; gap: 8px; margin: 0; padding: 4px 0; font-weight: normal; cursor: pointer; }
+.psf-value__input { width: var(--psf-control); height: var(--psf-control); margin: 0; flex: none; accent-color: var(--psf-accent); cursor: pointer; }
+.psf-value__name { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.psf-value__count { color: var(--psf-muted); font-size: .85em; }
+.psf-value.is-disabled { opacity: .45; }
+.psf-value.is-disabled .psf-value__label { cursor: default; }
+.psf-value__swatch {
+  width: var(--psf-control); height: var(--psf-control); flex: none;
+  border-radius: 50%; border: 1px solid var(--psf-border); background: var(--psf-swatch, transparent);
+}
+.psf-more {
+  margin-top: 6px; padding: 0; border: 0; background: none;
+  color: var(--psf-accent); font: inherit; font-size: .9em; cursor: pointer;
+}
+.psf-select {
+  width: 100%; padding: 6px 8px; border: 1px solid var(--psf-border); border-radius: var(--psf-radius);
+  background: var(--psf-bg); color: inherit; font: inherit;
+}
+
+/*
+ * «Все фильтры» (auto_rest): кнопка в конце панели и фасеты, не попавшие в автоподбор.
+ * Токены: --psf-rest-color (текст кнопки), --psf-rest-bg (фон), --psf-rest-count-bg (плашка с числом).
+ */
+.psf-rest { border-top: 1px solid var(--psf-border); }
+.psf-rest__toggle {
+  display: flex; align-items: center; gap: 8px; width: 100%; min-height: 44px;
+  padding: var(--psf-gap); border: 0; background: var(--psf-rest-bg, none); color: var(--psf-rest-color, var(--psf-accent));
+  font: inherit; font-weight: 600; text-align: left; cursor: pointer;
+}
+.psf-rest__label { flex: 1; min-width: 0; }
+.psf-rest__count {
+  min-width: 24px; padding: 1px 7px; border-radius: 999px; background: var(--psf-rest-count-bg, var(--psf-bg-soft));
+  color: var(--psf-text); font-size: .85em; text-align: center;
+}
+.psf-rest__arrow {
+  flex: none; width: 8px; height: 8px; margin: 0 2px; border-right: 2px solid currentColor; border-bottom: 2px solid currentColor;
+  transform: rotate(45deg); transition: transform .15s;
+}
+.psf-rest.is-open .psf-rest__arrow { transform: rotate(-135deg); }
+/* Слой на компьютере: стрелка вбок — кнопка открывает окно, а не раскрывает список. В шторке телефона — как список. */
+.psf-rest[data-psf-rest="layer"] .psf-rest__arrow, .psf-rest[data-psf-rest="modal"] .psf-rest__arrow { transform: rotate(-45deg); }
+.psf--mobile .psf-rest[data-psf-rest="layer"] .psf-rest__arrow, .psf--mobile .psf-rest[data-psf-rest="modal"] .psf-rest__arrow { transform: rotate(45deg); }
+.psf--mobile .psf-rest.is-open .psf-rest__arrow { transform: rotate(-135deg); }
+.psf-rest.is-loading .psf-rest__toggle { opacity: .6; cursor: progress; }
+.psf-rest__body { border-top: 1px solid var(--psf-border); }
+.psf-rest__body[hidden] { display: none; }
+
+/* Диапазон */
+.psf-range__inputs { display: flex; align-items: flex-end; gap: 8px; }
+.psf-range__field { flex: 1; min-width: 0; margin: 0; font-weight: normal; }
+.psf-range__label { display: block; color: var(--psf-muted); font-size: .8em; }
+.psf-range__input {
+  width: 100%; padding: 5px 8px; border: 1px solid var(--psf-border); border-radius: var(--psf-radius);
+  background: var(--psf-bg); color: inherit; font: inherit; -moz-appearance: textfield;
+}
+.psf-range__input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+.psf-range__suffix { padding-bottom: 6px; color: var(--psf-muted); }
+.psf-range__slider { position: relative; height: 24px; margin-top: 10px; }
+.psf-range__track {
+  position: absolute; left: 0; right: 0; top: 10px; height: 4px;
+  border-radius: 2px; background: var(--psf-border);
+}
+.psf-range__fill { position: absolute; top: 0; bottom: 0; left: 0; right: 0; border-radius: 2px; background: var(--psf-accent); }
+.psf-range__thumb {
+  position: absolute; left: 0; top: 0; width: 100%; height: 24px; margin: 0;
+  background: none; pointer-events: none; -webkit-appearance: none; appearance: none;
+}
+.psf-range__thumb::-webkit-slider-thumb {
+  -webkit-appearance: none; pointer-events: auto; width: 18px; height: 18px; border-radius: 50%;
+  background: var(--psf-bg); border: 2px solid var(--psf-accent); cursor: grab;
+}
+.psf-range__thumb::-moz-range-thumb {
+  pointer-events: auto; width: 14px; height: 14px; border-radius: 50%;
+  background: var(--psf-bg); border: 2px solid var(--psf-accent); cursor: grab;
+}
+.psf-range__thumb::-webkit-slider-runnable-track { background: none; }
+.psf-range__thumb::-moz-range-track { background: none; }
+
+/* Контент страницы во время запроса */
+.psf-loading { opacity: .55; transition: opacity .15s; }
+
+/* Подборки (посадочные) и индексируемые значения */
+.psf-seo-links { display: flex; flex-wrap: wrap; gap: 6px; padding: var(--psf-gap); border-bottom: 1px solid var(--psf-border); }
+.psf-seo-links__title { width: 100%; color: var(--psf-muted); font-size: .85em; }
+.psf-seo-links__item {
+  padding: 3px 10px; border: 1px solid var(--psf-border); border-radius: 999px;
+  color: var(--psf-text); font-size: .9em; text-decoration: none;
+}
+.psf-seo-links__item:hover, .psf-seo-links__item.is-active { border-color: var(--psf-accent); color: var(--psf-accent); text-decoration: none; }
+.psf-value__link { color: inherit; text-decoration: none; }
+.psf-value__link:hover { color: var(--psf-accent); text-decoration: none; }
+
+/* Кнопка применения: видна в режиме «Показать N» и в мобильной шторке */
+.psf__footer { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; }
+.psf-btn {
+  display: inline-flex; align-items: center; justify-content: center; padding: 8px 14px;
+  border: 1px solid var(--psf-accent); border-radius: var(--psf-radius);
+  background: var(--psf-bg); color: var(--psf-accent); font: inherit; text-decoration: none; cursor: pointer;
+}
+.psf-btn--primary { background: var(--psf-accent); color: var(--psf-accent-contrast); }
+.psf-btn--primary:hover, .psf-btn--primary:focus { color: var(--psf-accent-contrast); text-decoration: none; filter: brightness(1.05); }
+.psf__apply { display: none; }
+.psf--manual .psf__apply, .psf--mobile .psf__apply { display: inline-flex; }
+.psf--mobile .psf__apply { width: 100%; }
+.psf--manual:not(.is-pending) .psf__apply { opacity: .5; }
+
+/* Мобильная шторка */
+/* Кнопка темы прячется, когда в разделе нечего выбирать (JS ставит hidden); !important — сильнее d-flex/d-block Bootstrap. */
+[data-psf-open][hidden] { display: none !important; }
+.psf-toggle {
+  position: fixed; left: 50%; bottom: 16px; z-index: var(--psf-z, 1000); transform: translateX(-50%);
+  padding: 10px 22px; border: 0; border-radius: 999px; box-shadow: 0 4px 14px rgba(0, 0, 0, .2);
+  background: var(--ocps-brand, #2f6fed); color: #fff; font: inherit; font-weight: 600; cursor: pointer;
+}
+.psf-overlay {
+  position: fixed; inset: 0; z-index: calc(var(--psf-z, 1000) + 1); background: var(--psf-overlay, rgba(0, 0, 0, .45));
+  opacity: 0; visibility: hidden; transition: opacity .2s, visibility .2s;
+}
+.psf-overlay.is-open { opacity: 1; visibility: visible; }
+/*
+ * Закрытая шторка невидима (visibility: hidden — после выезда, чтобы анимация доиграла): иначе ее поля и кнопки
+ * за краем экрана оставались бы в порядке Tab (WCAG 2.4.3). Открытая — видима сразу (фокус уходит внутрь).
+ * scroll-padding — липкие шапка и подвал шторки не закрывают пункт, к которому прокручивает фокус (WCAG 2.4.11).
+ */
+.psf-drawer {
+  position: fixed; top: 0; bottom: 0; z-index: calc(var(--psf-z, 1000) + 2);
+  width: min(var(--psf-drawer-width, 340px), 90vw); overflow-y: auto; -webkit-overflow-scrolling: touch;
+  background: #fff; box-shadow: 0 0 24px rgba(0, 0, 0, .25);
+  visibility: hidden; transition: transform .25s ease, visibility 0s linear .25s;
+  scroll-padding-top: var(--psf-drawer-pad-top, 64px); scroll-padding-bottom: var(--psf-drawer-pad-bottom, 88px);
+}
+.psf-drawer--left { left: 0; transform: translateX(-105%); }
+.psf-drawer--right { right: 0; transform: translateX(105%); }
+/* На весь экран: выезжает снизу, без затемнения по краям и без тени. */
+.psf-drawer--full { left: 0; right: 0; width: 100%; transform: translateY(105%); box-shadow: none; }
+.psf-drawer.is-open { transform: none; visibility: visible; transition: transform .25s ease, visibility 0s; }
+.psf-drawer__head {
+  position: sticky; top: 0; z-index: 1; display: flex; align-items: center; justify-content: space-between;
+  padding: 12px 16px; border-bottom: 1px solid #e3e5e8; background: #fff;
+}
+.psf-drawer__title { font-weight: 600; font-size: 1.1em; }
+.psf-drawer__close { border: 0; background: none; font-size: 28px; line-height: 1; cursor: pointer; }
+.psf--mobile, .psf--layer { margin: 0; border: 0; border-radius: 0; }
+.psf--mobile .psf__header, .psf--layer .psf__header { display: none; }
+.psf--mobile .psf__footer, .psf--layer .psf__footer { position: sticky; bottom: 0; background: var(--psf-bg); box-shadow: 0 -2px 8px rgba(0, 0, 0, .06); }
+.psf-locked, .psf-locked body { overflow: hidden; }
+/* Слой «Все фильтры» на компьютере — та же шторка, шире; кнопка «Показать N товаров» внизу, как на телефоне. */
+.psf-drawer--layer:not(.psf-drawer--full) { width: min(var(--psf-layer-width, 440px), 100vw); }
+.psf--layer .psf__apply { display: inline-flex; width: 100%; }
+.psf--layer .psf-rest__toggle { display: none; }
+.psf--layer .psf-rest__body { border-top: 0; }
+/* «Сбросить» внизу — только в слое и окне (на странице сброс в шапке панели). */
+.psf__clear { display: none; }
+.psf--layer .psf__clear { display: inline-flex; }
+/* Снимок панели в гаснущем окне (JS убирает его после анимации). */
+.psf-ghost { pointer-events: none; }
+
+/*
+ * Окно «Все фильтры» по центру (auto_rest = modal, компьютер). Токены (на :root или в css_vars модуля):
+ * --psf-modal-width (1040px), --psf-modal-column (мин. ширина колонки, 240px), --psf-modal-gap (отступ окна от краев
+ * экрана, 32px), --psf-modal-radius (12px), --psf-overlay (затемнение фона).
+ */
+.psf-drawer--layer.psf-drawer--modal {
+  top: 50%; right: auto; bottom: auto; left: 50%;
+  width: min(var(--psf-modal-width, 1040px), calc(100vw - 2 * var(--psf-modal-gap, 32px)));
+  max-height: calc(100vh - 2 * var(--psf-modal-gap, 32px));
+  border-radius: var(--psf-modal-radius, 12px); box-shadow: 0 12px 48px rgba(0, 0, 0, .3);
+  opacity: 0; visibility: hidden; pointer-events: none; transform: translate(-50%, -50%) scale(.98);
+  transition: opacity .2s, transform .2s, visibility 0s linear .2s; /* видимость — сразу при открытии (фокус), при закрытии — после угасания */
+}
+.psf-drawer--layer.psf-drawer--modal.is-open { opacity: 1; visibility: visible; pointer-events: auto; transform: translate(-50%, -50%); transition: opacity .2s, transform .2s, visibility 0s; }
+.psf-drawer--modal .psf-drawer__head { padding: 16px 20px; }
+.psf-drawer--modal .psf-drawer__title { font-size: 1.25em; }
+.psf--modal .psf__body, .psf--modal .psf-rest__body {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(min(var(--psf-modal-column, 240px), 100%), 1fr));
+  align-items: start; column-gap: 24px; padding: 0 8px;
+}
+.psf--modal .psf-facet:last-child { border-bottom: 1px solid var(--psf-border); }
+.psf--modal .psf-rest { border-top: 0; }
+.psf--modal .psf__footer { justify-content: flex-end; padding: 12px 20px; }
+.psf--modal .psf__total { margin-right: auto; }
+.psf--modal .psf__apply { width: auto; min-width: 220px; }
+
+/*
+ * Кнопка «Показать товары» у выбранного пункта (компьютер, apply_popover = 1).
+ * Живет в <body> вне .psf, токены оформления JS копирует с панели. Стрелка смотрит на пункт:
+ * кнопка справа от панели — стрелка слева (.psf-pop), панель в правой колонке — наоборот (.psf-pop--left).
+ */
+.psf-pop { position: absolute; z-index: var(--psf-z, 1000); font-size: var(--psf-font-size, 14px); }
+.psf-pop[hidden] { display: none; }
+.psf-pop__btn {
+  position: relative; display: block; padding: 9px 16px; border: 0; border-radius: var(--psf-radius, 6px);
+  background: var(--psf-accent, #2f6fed); color: var(--psf-accent-contrast, #fff);
+  font: inherit; font-weight: 600; line-height: 1.2; white-space: nowrap; cursor: pointer;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, .18);
+}
+.psf-pop__btn::before {
+  content: ""; position: absolute; top: 50%; left: -6px; margin-top: -6px;
+  border-style: solid; border-width: 6px 6px 6px 0; border-color: transparent var(--psf-accent, #2f6fed) transparent transparent;
+}
+.psf-pop--left .psf-pop__btn::before { left: auto; right: -6px; border-width: 6px 0 6px 6px; border-color: transparent transparent transparent var(--psf-accent, #2f6fed); }
+.psf-pop__btn:hover, .psf-pop__btn:focus-visible { filter: brightness(1.06); }
+.psf-pop__btn.is-loading { opacity: .85; cursor: progress; }
+.psf-pop__btn:disabled { background: #9aa3ad; cursor: default; filter: none; }
+.psf-pop__btn:disabled::before { border-right-color: #9aa3ad; }
+.psf-pop--left .psf-pop__btn:disabled::before { border-right-color: transparent; border-left-color: #9aa3ad; }
+
+/* Цвета */
+.psf-swatches { display: flex; flex-wrap: wrap; gap: 8px; list-style: none; margin: 0; padding: 0; }
+.psf-swatch.is-extra { display: none; }
+.psf-facet.is-expanded .psf-swatch.is-extra { display: block; }
+.psf-swatch__label { position: relative; display: block; margin: 0; cursor: pointer; }
+.psf-swatch__input { position: absolute; opacity: 0; pointer-events: none; }
+.psf-swatch__color {
+  display: flex; align-items: center; justify-content: center; width: 32px; height: 32px;
+  border: 1px solid var(--psf-border); border-radius: 50%; background: var(--psf-swatch, var(--psf-bg-soft));
+  color: var(--psf-muted); font-size: 11px; text-transform: uppercase;
+}
+.psf-swatch__name { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+.psf-swatch__input:checked + .psf-swatch__color { box-shadow: 0 0 0 2px var(--psf-bg), 0 0 0 4px var(--psf-accent); }
+.psf-swatch__input:focus-visible + .psf-swatch__color { outline: 2px solid var(--psf-accent); outline-offset: 2px; }
+.psf-swatch.is-disabled { opacity: .35; }
+
+/* Картинки */
+.psf-tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(64px, 1fr)); gap: 8px; list-style: none; margin: 0; padding: 0; }
+.psf-tile.is-extra { display: none; }
+.psf-facet.is-expanded .psf-tile.is-extra { display: block; }
+.psf-tile__label { display: flex; flex-direction: column; align-items: center; gap: 4px; margin: 0; font-weight: normal; text-align: center; cursor: pointer; }
+.psf-tile__input { position: absolute; opacity: 0; pointer-events: none; }
+.psf-tile__image { width: 48px; height: 48px; border: 1px solid var(--psf-border); border-radius: var(--psf-radius); object-fit: cover; background: var(--psf-bg-soft); }
+.psf-tile__input:checked + .psf-tile__image { border-color: var(--psf-accent); box-shadow: 0 0 0 1px var(--psf-accent); }
+.psf-tile__input:focus-visible + .psf-tile__image { outline: 2px solid var(--psf-accent); outline-offset: 2px; }
+.psf-tile__name { font-size: .85em; line-height: 1.2; }
+.psf-tile.is-disabled { opacity: .4; }
+
+/* Переключатели */
+.psf-switch__input { position: absolute; opacity: 0; pointer-events: none; }
+.psf-switch__track {
+  position: relative; flex: none; width: 36px; height: 20px; border-radius: 10px; background: var(--psf-border);
+  transition: background .15s;
+}
+.psf-switch__track::after {
+  content: ""; position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; border-radius: 50%;
+  background: #fff; box-shadow: 0 1px 2px rgba(0, 0, 0, .25); transition: transform .15s;
+}
+.psf-switch__input:checked + .psf-switch__track { background: var(--psf-accent); }
+.psf-switch__input:checked + .psf-switch__track::after { transform: translateX(16px); }
+.psf-switch__input:focus-visible + .psf-switch__track { outline: 2px solid var(--psf-accent); outline-offset: 2px; }
+
+/* Доступность (WCAG 2.2 AA) */
+/* Объявление числа товаров для экранного диктора: видно только ему. */
+.psf-sr { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+.psf-drawer:focus { outline: none; }
+.psf-drawer:focus-visible { outline: 2px solid var(--psf-accent, #2f6fed); outline-offset: -2px; }
+/* Без анимаций, если так настроена система (WCAG 2.3.3). */
+@media (prefers-reduced-motion: reduce) {
+  .psf, .psf *, .psf-drawer, .psf-overlay, .psf-pop, .psf-loading { transition: none !important; animation: none !important; scroll-behavior: auto !important; }
+}

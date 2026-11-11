@@ -1,0 +1,13 @@
+{# Картинки значений (картинки опций или загруженные в админке), подпись под картинкой. #}
+<ul class="psf-tiles">
+  {% for value in facet.values %}
+  <li class="psf-tile{{ value.selected ? ' is-selected' }}{{ value.disabled ? ' is-disabled' }}{{ value.extra ? ' is-extra' }}">
+    <label class="psf-tile__label" title="{{ value.name|e }}">
+      <input class="psf-tile__input" type="checkbox" data-psf-href="{{ value.href|e }}"{{ value.selected ? ' checked' }}{{ value.disabled ? ' disabled' }}>
+      {% if value.thumb %}<img class="psf-tile__image" src="{{ value.thumb|e }}" alt="{{ value.name|e }}" width="48" height="48" loading="lazy">{% else %}<span class="psf-tile__image psf-tile__image--empty"></span>{% endif %}
+      <span class="psf-tile__name">{{ value.name|e }}{% if value.count is not null %} <span class="psf-value__count">{{ value.count }}</span>{% endif %}</span>
+    </label>
+  </li>
+  {% endfor %}
+</ul>
+{% if facet.more %}<button type="button" class="psf-more" data-psf-more data-psf-less-text="{{ text_less }}">{{ text_more }} ({{ facet.more }})</button>{% endif %}

@@ -1,0 +1,158 @@
+{# PS Filter — настройки. Форма по описанию полей; сохранение одним JSON (extension/module/ps_filter/save). #}
+{{ header }}{{ column_left }}
+<div id="content">
+  <div class="page-header">
+    <div class="container-fluid">
+      <div class="pull-right">
+        <a href="{{ url_facets }}" class="btn btn-default"><i class="fa fa-list"></i> {{ heading_facets }}</a>
+        <a href="{{ url_index }}" class="btn btn-default"><i class="fa fa-refresh"></i> {{ heading_index }}</a>
+        {% if can_modify %}
+        <button type="button" id="psf-repair" class="btn btn-default"><i class="fa fa-wrench"></i> {{ button_repair }}</button>
+        <button type="button" id="psf-save" class="btn btn-primary" title="{{ button_save }}"><i class="fa fa-save"></i></button>
+        {% endif %}
+        <a href="{{ back }}" class="btn btn-default" title="{{ button_back }}"><i class="fa fa-reply"></i></a>
+      </div>
+      <h1>{{ heading_title }}</h1>
+      <ul class="breadcrumb">
+        {% for breadcrumb in breadcrumbs %}
+        <li><a href="{{ breadcrumb.href }}">{{ breadcrumb.text }}</a></li>
+        {% endfor %}
+      </ul>
+    </div>
+  </div>
+  <div class="container-fluid">
+    <div id="psf-alert"></div>
+    {% if schema.legacy_files %}
+    <div class="alert alert-warning"><i class="fa fa-exclamation-circle"></i> {{ text_legacy_files }}{% for file in schema.legacy_files %}<br><code>{{ file|e }}</code>{% endfor %}</div>
+    {% endif %}
+
+    <div class="panel panel-default">
+      <div class="panel-heading"><h3 class="panel-title"><i class="fa fa-pencil"></i> {{ text_edit }}</h3></div>
+      <div class="panel-body">
+        <form id="psf-form" class="form-horizontal" onsubmit="return false;">
+          <div class="form-group">
+            <label class="col-sm-3 control-label" for="psf-status">{{ entry_status }}</label>
+            <div class="col-sm-9">
+              <select id="psf-status" class="form-control">
+                <option value="1"{% if status %} selected{% endif %}>{{ text_enabled }}</option>
+                <option value="0"{% if not status %} selected{% endif %}>{{ text_disabled }}</option>
+              </select>
+            </div>
+          </div>
+
+          <ul class="nav nav-tabs">
+            {% for g in groups %}<li{% if loop.first %} class="active"{% endif %}><a href="#{{ g.id }}" data-toggle="tab">{{ g.title }}</a></li>{% endfor %}
+            <li><a href="#tab-json" data-toggle="tab">JSON</a></li>
+            {% if support_pane %}<li><a href="#tab-support" data-toggle="tab">{{ support_tab|e }}</a></li>{% endif %}
+          </ul>
+          <div class="tab-content">
+            {% for g in groups %}
+            <div class="tab-pane{% if loop.first %} active{% endif %}" id="{{ g.id }}">
+              {% for f in g.fields %}
+              <div class="form-group">
+                <label class="col-sm-3 control-label" for="{{ f.id }}">{{ f.label }}</label>
+                <div class="col-sm-9">
+                  {% if f.type == 'bool' %}
+                    <select id="{{ f.id }}" class="form-control" data-key="{{ f.key }}" data-type="bool">
+                      <option value="1"{% if f.value %} selected{% endif %}>{{ text_yes }}</option>
+                      <option value="0"{% if not f.value %} selected{% endif %}>{{ text_no }}</option>
+                    </select>
+                  {% elseif f.type == 'select' %}
+                    <select id="{{ f.id }}" class="form-control" data-key="{{ f.key }}" data-type="text">
+                      {% for o in f.options %}<option value="{{ o.value }}"{% if o.value == f.value %} selected{% endif %}>{{ o.text }}</option>{% endfor %}
+                    </select>
+                  {% elseif f.type == 'statuses' or f.type == 'categories' %}
+                    <div id="{{ f.id }}" class="well well-sm" style="max-height: 220px; overflow: auto; margin-bottom: 0;" data-key="{{ f.key }}" data-type="statuses">
+                      {% for o in f.options %}<div class="checkbox" style="margin: 0 0 4px;"><label><input type="checkbox" value="{{ o.value }}"{% if o.checked %} checked{% endif %}> {{ o.text }}</label></div>{% endfor %}
+                    </div>
+                  {% elseif f.type == 'lines' %}
+                    <textarea id="{{ f.id }}" rows="4" class="form-control" data-key="{{ f.key }}" data-type="lines" style="font-family: monospace;">{{ f.value|e }}</textarea>
+                  {% else %}
+                    <input id="{{ f.id }}" type="{{ f.type == 'int' ? 'number' : 'text' }}" class="form-control" value="{{ f.value|e }}" data-key="{{ f.key }}" data-type="{{ f.type }}">
+                  {% endif %}
+                  {% if f.help %}<p class="help-block">{{ f.help }}</p>{% endif %}
+                </div>
+              </div>
+              {% endfor %}
+            </div>
+            {% endfor %}
+            <div class="tab-pane" id="tab-json">
+              <p class="help-block">{{ text_settings_json_help }}</p>
+              <textarea id="psf-settings" rows="22" class="form-control" style="font-family: monospace; font-size: 12px;"></textarea>
+              {% if can_modify %}<button type="button" id="psf-save-json" class="btn btn-default" style="margin-top: 10px;">{{ button_save_json }}</button>{% endif %}
+            </div>
+            {% if support_pane %}<div class="tab-pane" id="tab-support">{{ support_pane }}</div>{% endif %}
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <div class="panel panel-default">
+      <div class="panel-heading"><h3 class="panel-title"><i class="fa fa-database"></i> {{ text_install_info }}</h3></div>
+      <div class="panel-body">
+        <table class="table table-condensed">
+          <tr><td>{{ text_version }}</td><td>{{ schema.version }}</td></tr>
+          <tr><td>{{ text_db_version }}</td><td>{{ schema.db_version }}</td></tr>
+          <tr><td>{{ text_tables }}</td><td>{{ schema.tables_present }} / {{ schema.tables_total }}</td></tr>
+          <tr><td>{{ text_events }}</td><td>{{ schema.events_present }} / {{ schema.events_total }}</td></tr>
+          <tr><td>{{ text_strategy }}</td><td>{{ schema.set_strategy == 'derived' ? text_strategy_derived : text_strategy_temp }}</td></tr>
+        </table>
+      </div>
+    </div>
+    {{ support_footer }}
+  </div>
+</div>
+<script>
+(function () {
+  var settings = {{ settings_json }};
+  var area = document.getElementById('psf-settings');
+  area.value = JSON.stringify(settings, null, 2);
+
+  function alertBox(type, text) {
+    var box = document.getElementById('psf-alert'); box.innerHTML = '';
+    var div = document.createElement('div'); div.className = 'alert alert-' + type; div.textContent = text; box.appendChild(div);
+    window.scrollTo(0, 0);
+  }
+  function post(url, body) {
+    return fetch(url, { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }, body: JSON.stringify(body || {}) }).then(function (r) { return r.json(); });
+  }
+  // Значение поля → настройки; ключ с точкой — вложенный объект.
+  function collect() {
+    var out = JSON.parse(JSON.stringify(settings));
+    Array.prototype.forEach.call(document.querySelectorAll('#psf-form [data-key]'), function (el) {
+      var type = el.getAttribute('data-type'), v = el.value;
+      if (type === 'bool' || type === 'int') { v = parseInt(v, 10) || 0; }
+      else if (type === 'statuses') { v = Array.prototype.map.call(el.querySelectorAll('input:checked'), function (c) { return parseInt(c.value, 10); }); }
+      else if (type === 'chars') { v = v.split(/\s+/).filter(function (s) { return s.length; }); }
+      else if (type === 'lines') {
+        var obj = {};
+        v.split('\n').forEach(function (line) { var i = line.indexOf(':'); if (i > 0) { obj[line.slice(0, i).trim()] = line.slice(i + 1).trim(); } });
+        v = obj;
+      }
+      var path = el.getAttribute('data-key').split('.'), node = out;
+      for (var i = 0; i < path.length - 1; i++) { node[path[i]] = node[path[i]] || {}; node = node[path[i]]; }
+      node[path[path.length - 1]] = v;
+    });
+    return out;
+  }
+  function save(data) {
+    post('{{ save|e('js') }}', { status: document.getElementById('psf-status').value, settings: data }).then(function (json) {
+      alertBox(json.error ? 'danger' : 'success', json.error || json.success);
+      if (!json.error) { settings = data; area.value = JSON.stringify(settings, null, 2); }
+    });
+  }
+  var s = document.getElementById('psf-save'); if (s) s.addEventListener('click', function () { save(collect()); });
+  var sj = document.getElementById('psf-save-json'); if (sj) sj.addEventListener('click', function () {
+    var parsed; try { parsed = JSON.parse(area.value); } catch (e) { alertBox('danger', '{{ error_json|e('js') }}'); return; }
+    save(parsed);
+  });
+  var r = document.getElementById('psf-repair'); if (r) r.addEventListener('click', function () {
+    post('{{ repair|e('js') }}').then(function (json) {
+      if (json.error) { alertBox('danger', json.error); return; }
+      alertBox('success', json.success + ' ' + (json.report || []).join('; '));
+      setTimeout(function () { location.reload(); }, 1500);
+    });
+  });
+})();
+</script>
+{{ footer }}

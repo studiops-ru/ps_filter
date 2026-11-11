@@ -1,0 +1,22 @@
+{
+  "updated": "10.11.2026",
+  "modules": [
+    {"code": "ps_batch", "name": "PS Batch", "title": "массовое редактирование товаров", "title_en": "bulk product editing", "menu": "catalog"},
+    {"code": "ps_filter", "name": "PS Filter", "title": "фильтр товаров", "title_en": "product filter", "menu": "catalog"},
+    {"code": "ps_search", "name": "PS Search", "title": "поиск по каталогу", "title_en": "catalog search", "menu": "catalog"},
+    {"code": "ps_photo", "name": "PS Photo", "title": "загрузка фото товаров", "title_en": "product photo upload", "menu": "catalog"},
+    {"code": "ps_review", "name": "PS Review", "title": "отзывы и вопросы о товарах", "title_en": "product reviews and questions", "menu": "catalog"},
+    {"code": "ps_eazyoptions", "name": "PS EazyOptions", "title": "вариации объема и веса", "title_en": "volume and weight variations", "menu": "catalog", "aliases": ["eazyoptions"]},
+    {"code": "ps_checkout", "name": "PS Checkout", "title": "оформление заказа", "title_en": "checkout", "menu": "sale"},
+    {"code": "ps_delivery", "name": "PS Delivery", "title": "доставка СДЭК и Яндекс Доставка", "title_en": "CDEK and Yandex Delivery shipping", "menu": "none"},
+    {"code": "ps_importexport", "name": "PS ImportExport", "title": "выгрузка и загрузка клиентов", "title_en": "customer export and import", "menu": "customer"},
+    {"code": "ps_seealso", "name": "PS SeeAlso", "title": "похожие товары и рекомендации", "title_en": "similar products and recommendations", "menu": "marketing"},
+    {"code": "ps_yml", "name": "PS YML", "title": "товарные фиды для Яндекса", "title_en": "product feeds for Yandex", "menu": "marketing"},
+    {"code": "ps_sitemap", "name": "PS Sitemap", "title": "карта сайта", "title_en": "sitemap", "menu": "marketing"},
+    {"code": "ps_indexnow", "name": "PS IndexNow", "title": "быстрая индексация в Яндексе и Bing", "title_en": "fast indexing in Yandex and Bing", "menu": "marketing"},
+    {"code": "ps_report", "name": "PS Report", "title": "отчеты продаж и склад", "title_en": "sales reports and stock", "menu": "report"},
+    {"code": "ps_1c", "name": "PS 1C", "title": "обмен с 1С", "title_en": "1C exchange", "menu": "none"},
+    {"code": "ps_monitor", "name": "PS Monitor", "title": "здоровье сайта", "title_en": "site health", "menu": "none"},
+    {"code": "ps_russian", "name": "PS Russian", "title": "русская сборка для OpenCart 4", "title_en": "Russian localization for OpenCart 4", "menu": "none", "oc": "4", "license": "GPL-3.0"}
+  ]
+}

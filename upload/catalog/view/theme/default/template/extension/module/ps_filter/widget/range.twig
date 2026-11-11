@@ -1,0 +1,24 @@
+{#
+  Диапазон: два поля и двойной ползунок на нативных input[type=range].
+  data-psf-template — адрес с __MIN__/__MAX__, JS подставляет числа (в валюте магазина: делит на rate).
+  Поля — текстовые: число с разделителями языка магазина («1 010 000», r.*_text), скрипт разбирает их по point/thousand.
+#}
+{% set r = facet.range %}
+<div class="psf-range" data-psf-range data-psf-template="{{ r.href_template|e }}" data-psf-clear="{{ r.href_clear|e }}" data-psf-rate="{{ r.rate }}" data-psf-decimals="{{ r.decimals }}" data-psf-min="{{ r.min }}" data-psf-max="{{ r.max }}">
+  <div class="psf-range__inputs">
+    <label class="psf-range__field">
+      <span class="psf-range__label">{{ text_from }}</span>
+      <input class="psf-range__input" type="text" inputmode="decimal" autocomplete="off" placeholder="{{ r.avail_min_text|default(r.avail_min) }}" value="{{ r.from_text|default(r.from) }}" data-psf-range-min>
+    </label>
+    <label class="psf-range__field">
+      <span class="psf-range__label">{{ text_to }}</span>
+      <input class="psf-range__input" type="text" inputmode="decimal" autocomplete="off" placeholder="{{ r.avail_max_text|default(r.avail_max) }}" value="{{ r.to_text|default(r.to) }}" data-psf-range-max>
+    </label>
+    {% if r.suffix %}<span class="psf-range__suffix">{{ r.suffix|e }}</span>{% endif %}
+  </div>
+  <div class="psf-range__slider">
+    <div class="psf-range__track"><div class="psf-range__fill" data-psf-fill></div></div>
+    <input class="psf-range__thumb" type="range" min="{{ r.min }}" max="{{ r.max }}" step="{{ r.step }}" value="{{ r.from != '' ? r.from : r.min }}" data-psf-thumb-min aria-label="{{ text_from }}">
+    <input class="psf-range__thumb" type="range" min="{{ r.min }}" max="{{ r.max }}" step="{{ r.step }}" value="{{ r.to != '' ? r.to : r.max }}" data-psf-thumb-max aria-label="{{ text_to }}">
+  </div>
+</div>

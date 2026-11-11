@@ -1,0 +1,19 @@
+{#
+  «Все фильтры» (настройка auto_rest = panel | layer): фасеты, не попавшие в автоподбор. Со страницей приходит
+  только кнопка с их числом, сами фасеты скрипт запрашивает по нажатию (rest_open — они в ответе, список открыт).
+  Тема, переопределившая panel.twig, подключает этот файл так же, как он подключен в panel.twig.
+#}
+{% if rest_count %}
+<div class="psf-rest{{ rest_open ? ' is-open' }}" data-psf-rest="{{ rest_mode|e }}">
+  <button type="button" class="psf-rest__toggle" data-psf-rest-toggle aria-expanded="{{ rest_open ? 'true' : 'false' }}" data-psf-text-show="{{ text_rest|e }}" data-psf-text-hide="{{ text_rest_hide|e }}">
+    <span class="psf-rest__label" data-psf-rest-label>{{ rest_open ? text_rest_hide : text_rest }}</span>
+    <span class="psf-rest__count">{{ rest_count }}</span>
+    <span class="psf-rest__arrow" aria-hidden="true"></span>
+  </button>
+  <div class="psf-rest__body" data-psf-rest-body{% if not rest_open %} hidden{% endif %}>
+    {% for facet in rest %}
+      {% include [tpl ~ 'facet.twig', tpl_default ~ 'facet.twig'] %}
+    {% endfor %}
+  </div>
+</div>
+{% endif %}

@@ -1,0 +1,111 @@
+{# PS Filter — список посадочных страниц. #}
+{{ header }}{{ column_left }}
+<div id="content">
+  <div class="page-header">
+    <div class="container-fluid">
+      <div class="pull-right">
+        <a href="{{ url_templates }}" class="btn btn-default"><i class="fa fa-magic"></i> {{ heading_templates }}</a>
+        <a href="{{ url_export }}" class="btn btn-default" title="{{ button_export }}"><i class="fa fa-download"></i></a>
+        {% if can_modify %}
+        <button type="button" id="psf-import" class="btn btn-default" title="{{ button_import }}"><i class="fa fa-upload"></i></button>
+        <input type="file" id="psf-import-file" accept=".json,application/json" style="display: none;">
+        <a href="{{ add }}" class="btn btn-primary" title="{{ button_add }}"><i class="fa fa-plus"></i></a>
+        <button type="button" id="psf-delete" class="btn btn-danger" title="{{ button_delete }}"><i class="fa fa-trash-o"></i></button>
+        {% endif %}
+      </div>
+      <h1>{{ heading_pages }}</h1>
+      <ul class="breadcrumb">{% for b in breadcrumbs %}<li><a href="{{ b.href }}">{{ b.text }}</a></li>{% endfor %}</ul>
+    </div>
+  </div>
+  <div class="container-fluid">
+    <div id="psf-alert"></div>
+    <div class="panel panel-default">
+      <div class="panel-heading"><h3 class="panel-title"><i class="fa fa-list"></i> {{ heading_pages }}</h3></div>
+      <div class="panel-body">
+        <p class="text-muted">{{ help_pages }}</p>
+        {% if auto_count %}<p class="text-muted">{{ text_auto_pages|format(auto_count) }}</p>{% endif %}
+        <form class="form-inline" method="get" action="index.php">
+          <input type="hidden" name="route" value="{{ route_list }}">
+          <input type="hidden" name="user_token" value="{{ url_list|split('user_token=')|last }}">
+          <input type="text" name="filter" value="{{ filter|e }}" class="form-control" placeholder="{{ entry_search }}">
+          <button type="submit" class="btn btn-default"><i class="fa fa-search"></i></button>
+        </form>
+      </div>
+      <div class="table-responsive">
+        <table class="table table-hover">
+          <thead>
+            <tr>
+              <th style="width: 1px;"><input type="checkbox" id="psf-all"></th>
+              <th>{{ column_name }}</th>
+              <th>{{ column_keyword }}</th>
+              <th>{{ column_scope }}</th>
+              <th class="text-right">{{ column_products }}</th>
+              <th class="text-center">{{ column_status }}</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+          {% for p in pages %}
+            <tr>
+              <td><input type="checkbox" name="selected" value="{{ p.page_id }}"></td>
+              <td>{{ p.name|e }}</td>
+              <td><code>{{ p.url_mode ? '/' : '…/' }}{{ p.keyword|e }}</code></td>
+              <td class="text-muted">{{ p.scope|e }}</td>
+              <td class="text-right">{% if p.count %}{{ p.count }}{% else %}<span class="label label-warning">0</span>{% endif %}</td>
+              <td class="text-center">{% if p.status %}<i class="fa fa-check text-success"></i>{% else %}<i class="fa fa-minus text-muted"></i>{% endif %}</td>
+              <td class="text-right" style="white-space: nowrap;">
+                <a href="{{ p.view }}" target="_blank" class="btn btn-default btn-sm" title="{{ button_view }}"><i class="fa fa-eye"></i></a>
+                <a href="{{ p.edit }}" class="btn btn-primary btn-sm" title="{{ button_edit }}"><i class="fa fa-pencil"></i></a>
+              </td>
+            </tr>
+          {% else %}
+            <tr><td colspan="7" class="text-center text-muted">{{ text_no_pages }}</td></tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      <div class="panel-footer">{{ pagination }}</div>
+    </div>
+    {{ support_footer }}
+  </div>
+</div>
+<script>
+(function () {
+  var all = document.getElementById('psf-all');
+  if (all) all.addEventListener('change', function () {
+    Array.prototype.forEach.call(document.querySelectorAll('input[name="selected"]'), function (c) { c.checked = all.checked; });
+  });
+  var imp = document.getElementById('psf-import'), file = document.getElementById('psf-import-file');
+  if (imp) {
+    imp.addEventListener('click', function () { file.value = ''; file.click(); });
+    file.addEventListener('change', function () {
+      if (!file.files.length) return;
+      file.files[0].text().then(function (text) {
+        return fetch('{{ url_import|e('js') }}', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: text });
+      }).then(function (r) { return r.json(); }).then(function (json) {
+        var box = document.getElementById('psf-alert'); box.innerHTML = '';
+        var d = document.createElement('div'); d.className = 'alert alert-' + (json.error ? 'danger' : (json.skipped && json.skipped.length ? 'warning' : 'success'));
+        d.textContent = json.error || json.success;
+        if (json.skipped && json.skipped.length) {
+          var ul = document.createElement('ul');
+          json.skipped.forEach(function (s) { var li = document.createElement('li'); li.textContent = s; ul.appendChild(li); });
+          d.appendChild(ul);
+        }
+        box.appendChild(d);
+        if (!json.error && (json.created || json.updated)) { setTimeout(function () { location.reload(); }, json.skipped && json.skipped.length ? 4000 : 1200); }
+      });
+    });
+  }
+  var del = document.getElementById('psf-delete');
+  if (del) del.addEventListener('click', function () {
+    var ids = Array.prototype.map.call(document.querySelectorAll('input[name="selected"]:checked'), function (c) { return c.value; });
+    if (!ids.length || !confirm('{{ text_confirm_delete_pages|e('js') }}')) return;
+    fetch('{{ url_delete|e('js') }}', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ids: ids }) })
+      .then(function (r) { return r.json(); }).then(function (json) {
+        if (json.error) { alert(json.error); return; }
+        location.reload();
+      });
+  });
+})();
+</script>
+{{ footer }}

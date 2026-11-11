@@ -1,0 +1,13 @@
+{# Переключатели: каждое значение — тумблер. Удобно для «В наличии», «Со скидкой», «Новинка». #}
+<ul class="psf-values psf-values--toggle">
+  {% for value in facet.values %}
+  <li class="psf-value{{ value.selected ? ' is-selected' }}{{ value.disabled ? ' is-disabled' }}{{ value.extra ? ' is-extra' }}">
+    <label class="psf-value__label psf-switch">
+      <input class="psf-switch__input" type="checkbox" role="switch" data-psf-href="{{ value.href|e }}"{{ value.selected ? ' checked' }}{{ value.disabled ? ' disabled' }}>
+      <span class="psf-switch__track" aria-hidden="true"></span>
+      <span class="psf-value__name">{{ value.name|e }}</span>
+      {% if value.count is not null %}<span class="psf-value__count">{{ value.count }}</span>{% endif %}
+    </label>
+  </li>
+  {% endfor %}
+</ul>

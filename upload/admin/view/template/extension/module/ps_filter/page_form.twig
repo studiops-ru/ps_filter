@@ -1,0 +1,254 @@
+{#
+  PS Filter — посадочная страница. Раздел → конструктор фильтра (фасеты и значения раздела
+  с числом товаров) → тексты и адрес по языкам. Сохранение одним JSON.
+#}
+{{ header }}{{ column_left }}
+<div id="content">
+  <div class="page-header">
+    <div class="container-fluid">
+      <div class="pull-right">
+        {% if can_modify %}<button type="button" id="psf-save" class="btn btn-primary" title="{{ button_save }}"><i class="fa fa-save"></i></button>{% endif %}
+        <a href="{{ url_list }}" class="btn btn-default" title="{{ button_back }}"><i class="fa fa-reply"></i></a>
+      </div>
+      <h1>{{ heading_pages }}</h1>
+      <ul class="breadcrumb">{% for b in breadcrumbs %}<li><a href="{{ b.href }}">{{ b.text }}</a></li>{% endfor %}</ul>
+    </div>
+  </div>
+  <div class="container-fluid">
+    <div id="psf-alert"></div>
+    <div class="row">
+      <div class="col-md-7">
+        <div class="panel panel-default">
+          <div class="panel-heading"><h3 class="panel-title"><i class="fa fa-filter"></i> {{ text_page_filter }}</h3></div>
+          <div class="panel-body">
+            <div class="form-group">
+              <label>{{ entry_scope }}</label>
+              <div>
+                <label class="radio-inline"><input type="radio" name="scope_type" value="1"> {{ text_scope_category }}</label>
+                <label class="radio-inline"><input type="radio" name="scope_type" value="2"> {{ text_scope_brand }}</label>
+              </div>
+              <div style="position: relative; margin-top: 6px;">
+                <input type="text" id="psf-scope" class="form-control" autocomplete="off" placeholder="{{ entry_scope_search }}">
+                <ul id="psf-scope-ac" class="dropdown-menu" style="width: 100%;"></ul>
+              </div>
+              <div class="text-danger" data-err="scope"></div>
+            </div>
+            <div class="form-group">
+              <label>{{ entry_paste_url }}</label>
+              <div class="input-group">
+                <input type="text" id="psf-paste" class="form-control" placeholder="https://…/filter/brand=…/">
+                <span class="input-group-btn"><button type="button" id="psf-paste-btn" class="btn btn-default">{{ button_apply }}</button></span>
+              </div>
+            </div>
+            <div class="text-danger" data-err="state"></div>
+            <p><b>{{ text_products }}:</b> <span id="psf-total">—</span></p>
+            <div id="psf-facets" class="text-muted">{{ text_choose_scope }}</div>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-5">
+        <div class="panel panel-default">
+          <div class="panel-heading"><h3 class="panel-title"><i class="fa fa-cog"></i> {{ text_page_options }}</h3></div>
+          <div class="panel-body">
+            <div class="form-group">
+              <label>{{ entry_url_mode_page }}</label>
+              <select id="psf-url-mode" class="form-control">
+                <option value="0">{{ option_page_url_0 }}</option>
+                <option value="1">{{ option_page_url_1 }}</option>
+              </select>
+            </div>
+            <div class="checkbox"><label><input type="checkbox" id="psf-status"> {{ entry_status }}</label></div>
+            <div class="checkbox"><label><input type="checkbox" id="psf-in-panel"> {{ entry_in_panel }}</label></div>
+            <div class="checkbox"><label><input type="checkbox" id="psf-in-category"> {{ entry_in_category }}</label></div>
+            <div class="checkbox"><label><input type="checkbox" id="psf-in-sitemap"> {{ entry_in_sitemap }}</label></div>
+            <div class="form-group"><label>{{ column_sort }}</label><input type="number" id="psf-sort" class="form-control"></div>
+            <p class="help-block">{{ help_placeholders }}</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel panel-default">
+      <div class="panel-heading"><h3 class="panel-title"><i class="fa fa-pencil"></i> {{ text_page_texts }}</h3></div>
+      <div class="panel-body">
+        <ul class="nav nav-tabs" id="psf-lang-tabs"></ul>
+        <div class="tab-content" id="psf-lang-panes" style="padding-top: 15px;"></div>
+      </div>
+    </div>
+    {{ support_footer }}
+  </div>
+</div>
+<script>
+(function () {
+  var page = {{ page_json }};
+  var languages = {{ languages_json }};
+  var urls = { save: '{{ url_save|e('js') }}', facets: '{{ url_facets|e('js') }}', count: '{{ url_count|e('js') }}', parse: '{{ url_parse|e('js') }}',
+    cat: '{{ url_category_ac|e('js') }}', mfg: '{{ url_manufacturer_ac|e('js') }}', list: '{{ url_list|e('js') }}' };
+  var T = { name: '{{ entry_page_name|e('js') }}', h1: '{{ entry_h1|e('js') }}', meta_title: '{{ entry_meta_title|e('js') }}',
+    meta_description: '{{ entry_meta_description|e('js') }}', meta_keyword: '{{ entry_meta_keyword|e('js') }}', description: '{{ entry_page_text|e('js') }}',
+    text_position: '{{ entry_text_position|e('js') }}', pos0: '{{ option_text_position_0|e('js') }}', pos1: '{{ option_text_position_1|e('js') }}',
+    keyword: '{{ entry_keyword|e('js') }}', any: '{{ text_any_value|e('js') }}', from: '{{ text_from|e('js') }}', to: '{{ text_to|e('js') }}', none: '{{ text_no_facets_scope|e('js') }}' };
+  var state = page.state && !Array.isArray(page.state) ? page.state : {};
+
+  function $(id) { return document.getElementById(id); }
+  function el(tag, attrs, html) { var e = document.createElement(tag); Object.keys(attrs || {}).forEach(function (k) { e.setAttribute(k, attrs[k]); }); if (html != null) e.innerHTML = html; return e; }
+  function esc(s) { var d = document.createElement('div'); d.textContent = s == null ? '' : String(s); return d.innerHTML; }
+  function get(url) { return fetch(url, { credentials: 'same-origin' }).then(function (r) { return r.json(); }); }
+  function post(url, body) { return fetch(url, { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }).then(function (r) { return r.json(); }); }
+  function alertBox(type, text) { var b = $('psf-alert'); b.innerHTML = ''; b.appendChild(el('div', { 'class': 'alert alert-' + type }, esc(text))); window.scrollTo(0, 0); }
+  var translit = { 'а':'a','б':'b','в':'v','г':'g','д':'d','е':'e','\u0451':'e','ж':'zh','з':'z','и':'i','й':'y','к':'k','л':'l','м':'m','н':'n','о':'o','п':'p','р':'r','с':'s','т':'t','у':'u','ф':'f','х':'h','ц':'c','ч':'ch','ш':'sh','щ':'sch','ъ':'','ы':'y','ь':'','э':'e','ю':'yu','я':'ya' };
+  function slug(s) { return String(s).toLowerCase().split('').map(function (c) { return translit[c] != null ? translit[c] : c; }).join('').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 100); }
+
+  /* --- Опции --- */
+  Array.prototype.forEach.call(document.querySelectorAll('input[name="scope_type"]'), function (r) { r.checked = +r.value === page.scope_type; });
+  $('psf-scope').value = page.scope_name || '';
+  $('psf-url-mode').value = String(page.url_mode);
+  $('psf-status').checked = !!page.status; $('psf-in-panel').checked = !!page.in_panel;
+  $('psf-in-category').checked = !!page.in_category; $('psf-in-sitemap').checked = !!page.in_sitemap;
+  $('psf-sort').value = page.sort_order;
+
+  /* --- Тексты по языкам --- */
+  languages.forEach(function (l, i) {
+    var d = page.description[l.language_id] || {};
+    $('psf-lang-tabs').appendChild(el('li', i ? {} : { 'class': 'active' }, '<a href="#psf-lang-' + l.language_id + '" data-toggle="tab">' + esc(l.name) + '</a>'));
+    var pane = el('div', { 'class': 'tab-pane' + (i ? '' : ' active'), id: 'psf-lang-' + l.language_id });
+    function field(key, label, type) {
+      var id = 'psf-' + key + '-' + l.language_id, v = key === 'keyword' ? (page.keyword[l.language_id] || '') : (d[key] || '');
+      var input = type === 'textarea' ? '<textarea id="' + id + '" rows="6" class="form-control">' + esc(v) + '</textarea>'
+        : '<input type="text" id="' + id + '" class="form-control" value="' + esc(v) + '">';
+      return '<div class="form-group"><label for="' + id + '">' + esc(label) + '</label>' + input + '<div class="text-danger" data-err="' + key + '_' + l.language_id + '"></div></div>';
+    }
+    pane.innerHTML = field('name', T.name) + field('keyword', T.keyword) + field('h1', T.h1) + field('meta_title', T.meta_title)
+      + field('meta_description', T.meta_description) + field('meta_keyword', T.meta_keyword) + field('description', T.description, 'textarea')
+      + '<div class="form-group"><label>' + esc(T.text_position) + '</label><select id="psf-text_position-' + l.language_id + '" class="form-control">'
+      + '<option value="0">' + esc(T.pos0) + '</option><option value="1"' + (+d.text_position === 1 ? ' selected' : '') + '>' + esc(T.pos1) + '</option></select></div>';
+    $('psf-lang-panes').appendChild(pane);
+    // Ключ по названию, пока его не правили руками.
+    var name = $('psf-name-' + l.language_id), kw = $('psf-keyword-' + l.language_id);
+    name.addEventListener('blur', function () { if (!kw.value.trim()) { kw.value = slug(name.value); } });
+  });
+
+  /* --- Раздел: автодополнение категорий и брендов штатными методами админки --- */
+  var scopeType = function () { var r = document.querySelector('input[name="scope_type"]:checked'); return r ? +r.value : 1; };
+  var ac = $('psf-scope-ac'), timer;
+  $('psf-scope').addEventListener('input', function () {
+    clearTimeout(timer);
+    var q = this.value;
+    timer = setTimeout(function () {
+      get((scopeType() === 2 ? urls.mfg : urls.cat) + '&filter_name=' + encodeURIComponent(q)).then(function (items) {
+        ac.innerHTML = '';
+        items.forEach(function (it) {
+          var li = el('li', {}, '<a href="#">' + esc(it.name.replace(/&gt;/g, '>').replace(/&amp;/g, '&')) + '</a>');
+          li.addEventListener('mousedown', function (e) {
+            e.preventDefault();
+            page.scope_id = +(it.category_id || it.manufacturer_id);
+            page.scope_type = scopeType();
+            $('psf-scope').value = li.textContent;
+            ac.style.display = 'none';
+            loadFacets();
+          });
+          ac.appendChild(li);
+        });
+        ac.style.display = items.length ? 'block' : 'none';
+      });
+    }, 250);
+  });
+  $('psf-scope').addEventListener('blur', function () { setTimeout(function () { ac.style.display = 'none'; }, 200); });
+  Array.prototype.forEach.call(document.querySelectorAll('input[name="scope_type"]'), function (r) {
+    r.addEventListener('change', function () { page.scope_id = 0; $('psf-scope').value = ''; $('psf-facets').textContent = '{{ text_choose_scope|e('js') }}'; });
+  });
+
+  /* --- Конструктор фильтра --- */
+  function loadFacets() {
+    if (!page.scope_id) { return; }
+    $('psf-facets').textContent = '…';
+    get(urls.facets + '&scope_type=' + page.scope_type + '&scope_id=' + page.scope_id).then(function (json) {
+      var box = $('psf-facets'); box.innerHTML = ''; box.className = '';
+      if (json.error) { box.textContent = json.error; return; }
+      if (!json.facets.length) { box.textContent = T.none; return; }
+      json.facets.forEach(function (f) {
+        var sel = state[f.facet_id];
+        var det = el('details', sel ? { open: '' } : {});
+        det.appendChild(el('summary', { style: 'cursor:pointer; font-weight:600; padding:4px 0;' }, esc(f.name) + ' <code>' + esc(f.code) + '</code>'));
+        var body = el('div', { style: 'padding: 4px 0 8px 14px; max-height: 260px; overflow:auto;' });
+        if (f.type === 'range') {
+          body.innerHTML = esc(T.from) + ' <input type="number" step="any" class="form-control input-sm" style="display:inline-block;width:110px" data-min="' + f.facet_id + '" placeholder="' + f.min + '" value="' + (sel && sel.min != null ? sel.min : '') + '"> '
+            + esc(T.to) + ' <input type="number" step="any" class="form-control input-sm" style="display:inline-block;width:110px" data-max="' + f.facet_id + '" placeholder="' + f.max + '" value="' + (sel && sel.max != null ? sel.max : '') + '">';
+        } else {
+          f.values.forEach(function (v) {
+            var on = sel && sel.ids && sel.ids.indexOf(v.value_id) !== -1;
+            body.appendChild(el('label', { style: 'display:block; font-weight:normal; margin:0;' },
+              '<input type="checkbox" data-facet="' + f.facet_id + '" value="' + v.value_id + '"' + (on ? ' checked' : '') + '> ' + esc(v.name) + ' <span class="text-muted">' + v.count + '</span>'));
+          });
+        }
+        det.appendChild(body);
+        box.appendChild(det);
+      });
+      recount();
+    });
+  }
+  function collect() {
+    var s = {};
+    Array.prototype.forEach.call(document.querySelectorAll('#psf-facets input[data-facet]:checked'), function (c) {
+      var f = c.getAttribute('data-facet'); s[f] = s[f] || { ids: [] }; s[f].ids.push(+c.value);
+    });
+    Array.prototype.forEach.call(document.querySelectorAll('#psf-facets input[data-min]'), function (c) {
+      var f = c.getAttribute('data-min'), mx = document.querySelector('#psf-facets input[data-max="' + f + '"]');
+      if (c.value !== '' || mx.value !== '') { s[f] = { min: c.value === '' ? null : +c.value, max: mx.value === '' ? null : +mx.value }; }
+    });
+    return s;
+  }
+  var recount = (function () {
+    var t;
+    return function () {
+      clearTimeout(t);
+      t = setTimeout(function () {
+        state = collect();
+        if (!page.scope_id) { return; }
+        post(urls.count, { scope_type: page.scope_type, scope_id: page.scope_id, state: state }).then(function (json) {
+          $('psf-total').textContent = json.error ? json.error : json.total;
+        });
+      }, 300);
+    };
+  })();
+  $('psf-facets').addEventListener('change', recount);
+  $('psf-facets').addEventListener('input', recount);
+
+  $('psf-paste-btn').addEventListener('click', function () {
+    post(urls.parse, { url: $('psf-paste').value }).then(function (json) {
+      if (json.error) { alertBox('danger', json.error); return; }
+      state = json.state || {};
+      loadFacets();
+    });
+  });
+
+  /* --- Сохранение --- */
+  var save = $('psf-save');
+  if (save) save.addEventListener('click', function () {
+    Array.prototype.forEach.call(document.querySelectorAll('[data-err]'), function (e) { e.textContent = ''; });
+    var body = {
+      page_id: page.page_id, scope_type: page.scope_type, scope_id: page.scope_id, state: collect(),
+      url_mode: +$('psf-url-mode').value, status: $('psf-status').checked, in_panel: $('psf-in-panel').checked,
+      in_category: $('psf-in-category').checked, in_sitemap: $('psf-in-sitemap').checked, sort_order: +$('psf-sort').value || 0,
+      description: {}, keyword: {}
+    };
+    languages.forEach(function (l) {
+      var id = l.language_id, v = function (k) { return $('psf-' + k + '-' + id).value; };
+      body.description[id] = { name: v('name'), h1: v('h1'), meta_title: v('meta_title'), meta_description: v('meta_description'),
+        meta_keyword: v('meta_keyword'), description: v('description'), text_position: +v('text_position') };
+      body.keyword[id] = v('keyword');
+    });
+    post(urls.save, body).then(function (json) {
+      if (json.errors) {
+        Object.keys(json.errors).forEach(function (k) { var e = document.querySelector('[data-err="' + k + '"]'); if (e) e.textContent = json.errors[k]; });
+      }
+      if (json.error) { alertBox('danger', json.error); return; }
+      alertBox('success', json.success + ' (' + json.total + ')');
+      if (!page.page_id) { page.page_id = json.page_id; history.replaceState(null, '', location.href + '&page_id=' + json.page_id); }
+    });
+  });
+
+  if (page.scope_id) { loadFacets(); }
+})();
+</script>
+{{ footer }}

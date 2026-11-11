@@ -1,0 +1,7 @@
+{# Выпадающий список: value опции — адрес состояния. #}
+<select class="psf-select" data-psf-select>
+  <option value="{{ facet.href_clear|e }}">{{ text_any }}</option>
+  {% for value in facet.values %}
+  <option value="{{ value.href|e }}"{{ value.selected ? ' selected' }}{{ value.disabled ? ' disabled' }}>{{ value.name|e }}{% if value.count is not null %} ({{ value.count }}){% endif %}</option>
+  {% endfor %}
+</select>

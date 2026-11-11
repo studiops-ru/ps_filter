@@ -1,0 +1,169 @@
+{# PS Filter — индексация. Переиндексация AJAX-шагами с реальным прогрессом. #}
+{{ header }}{{ column_left }}
+<div id="content">
+  <div class="page-header">
+    <div class="container-fluid">
+      <h1>{{ heading_index }}</h1>
+      <ul class="breadcrumb">
+        {% for breadcrumb in breadcrumbs %}<li><a href="{{ breadcrumb.href }}">{{ breadcrumb.text }}</a></li>{% endfor %}
+      </ul>
+    </div>
+  </div>
+  <div class="container-fluid">
+    <div id="psf-alert"></div>
+    <div class="row">
+      <div class="col-md-6">
+        <div class="panel panel-default">
+          <div class="panel-heading"><h3 class="panel-title"><i class="fa fa-refresh"></i> {{ text_reindex }}</h3></div>
+          <div class="panel-body">
+            <p class="text-muted">{{ help_reindex }}</p>
+            <div class="progress" style="height: 22px;">
+              <div id="psf-bar" class="progress-bar" role="progressbar" style="width: {{ job and job.total ? (job.done / job.total * 100)|round : 0 }}%;"></div>
+            </div>
+            <p id="psf-progress">
+              {% if job %}{{ text_last_job }}: #{{ job.job_id }}, {{ job.status }}, {{ job.done }} / {{ job.total }}, {{ job.date_updated }}{% else %}{{ text_never }}{% endif %}
+            </p>
+            {% if can_modify %}
+            <button type="button" id="psf-reindex" class="btn btn-primary"><i class="fa fa-play"></i> {{ running ? button_continue : button_reindex }}</button>
+            <button type="button" id="psf-restart" class="btn btn-default"{% if not running %} style="display:none"{% endif %}>{{ button_restart }}</button>
+            {% endif %}
+          </div>
+        </div>
+        <div class="panel panel-default">
+          <div class="panel-heading"><h3 class="panel-title"><i class="fa fa-magic"></i> {{ text_wizard }}</h3></div>
+          <div class="panel-body">
+            <p class="text-muted">{{ help_wizard }}</p>
+            {% if can_modify %}<button type="button" id="psf-wizard" class="btn btn-default"><i class="fa fa-magic"></i> {{ button_wizard }}</button>{% endif %}
+            <pre id="psf-wizard-out" style="display:none; margin-top: 10px; max-height: 240px; overflow: auto;"></pre>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-6">
+        <div class="panel panel-default">
+          <div class="panel-heading"><h3 class="panel-title"><i class="fa fa-bar-chart"></i> {{ text_stats }}</h3></div>
+          <table class="table table-condensed" id="psf-stats">
+            <tr><td>{{ stat_products }}</td><td class="text-right" data-k="products">{{ stats.products }} / {{ stats.products_all }}</td></tr>
+            <tr><td>{{ stat_facets }}</td><td class="text-right" data-k="facets">{{ stats.facets }} / {{ stats.facets_all }}</td></tr>
+            <tr><td>{{ stat_values }}</td><td class="text-right" data-k="values">{{ stats.values }}</td></tr>
+            <tr><td>{{ stat_rows }}</td><td class="text-right" data-k="rows">{{ stats.rows }} + {{ stats.ranges }}</td></tr>
+            <tr><td>{{ stat_size }}</td><td class="text-right">{{ stats.size_mb }} МБ{% if stats.size_mb > stats.pool_mb %} <span class="label label-warning" title="{{ help_pool }}">&gt; buffer pool {{ stats.pool_mb }} МБ</span>{% endif %}</td></tr>
+            <tr><td>{{ stat_cache }}</td><td class="text-right">{{ stats.cache }} {% if can_modify %}<button type="button" id="psf-clear" class="btn btn-xs btn-default">{{ button_clear_cache }}</button>{% endif %}</td></tr>
+          </table>
+        </div>
+        <div class="panel panel-default">
+          <div class="panel-heading"><h3 class="panel-title"><i class="fa fa-bolt"></i> {{ text_backend }}</h3></div>
+          <div class="panel-body">
+            {% if manticore.enabled %}
+            <p><b>Manticore</b> {{ manticore.host|e }} · <code>{{ manticore.table|e }}</code>
+              {% if manticore.state == 'ready' and not manticore.error %}<span class="label label-success">{{ text_mt_ready }}</span>
+              {% elseif manticore.state == 'building' %}<span class="label label-info">{{ text_mt_building }}</span>
+              {% else %}<span class="label label-warning">{{ text_mt_not_ready }}</span>{% endif %}
+            </p>
+            {% if manticore.error %}<div class="alert alert-danger" style="margin-bottom: 10px;">{{ manticore.error|e }}</div>{% endif %}
+            <p>{{ text_mt_docs|format(manticore.docs is null ? '—' : manticore.docs, manticore.products) }}{% if manticore.version %} · <span class="text-muted">{{ manticore.version|split(' ')|first }}</span>{% endif %}</p>
+            <p class="text-muted">{{ help_mt_rebuild }}</p>
+            {% if can_modify %}<button type="button" id="psf-mt" class="btn btn-default"><i class="fa fa-refresh"></i> {{ button_mt_rebuild }}</button>{% endif %}
+            <span id="psf-mt-out" class="text-muted" style="margin-left: 8px;"></span>
+            {% else %}
+            <p>MySQL. <span class="text-muted">{{ help_backend_mysql }}</span></p>
+            {% endif %}
+          </div>
+        </div>
+        <div class="panel panel-default">
+          <div class="panel-heading"><h3 class="panel-title"><i class="fa fa-file-text-o"></i> {{ text_landings_block }}</h3></div>
+          <div class="panel-body">
+            <p>{{ text_landings_stat|format(pages_total, pages_auto) }}</p>
+            <p class="text-muted">{{ help_landings_recount }}</p>
+            {% if can_modify %}<button type="button" id="psf-pages" class="btn btn-default"><i class="fa fa-refresh"></i> {{ button_pages_recount }}</button>{% endif %}
+            <span id="psf-pages-out" class="text-muted" style="margin-left: 8px;"></span>
+            <p style="margin-top: 10px;"><b>{{ text_sitemap }}:</b> <a href="{{ sitemap }}" target="_blank"><code>{{ sitemap }}</code></a></p>
+          </div>
+        </div>
+        <div class="panel panel-default">
+          <div class="panel-heading"><h3 class="panel-title"><i class="fa fa-clock-o"></i> {{ text_cron }}</h3></div>
+          <div class="panel-body">
+            <p class="text-muted">{{ help_cron }}</p>
+            <p><b>CLI:</b> <code>{{ cron_cli }}</code></p>
+            {# Адрес с ключом — только тем, кто может его менять: ключ открывает запуск задач по HTTP. #}
+            {% if can_modify %}
+            <p><b>HTTP:</b> <code id="psf-cron-http">{{ cron_http ?: text_no_key }}</code></p>
+            <button type="button" id="psf-cronkey" class="btn btn-xs btn-default">{{ button_cron_key }}</button>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+    {{ support_footer }}
+  </div>
+</div>
+<script>
+(function () {
+  var urlPages = '{{ url_pages|e('js') }}';
+  var pb = document.getElementById('psf-pages');
+  if (pb) pb.addEventListener('click', function () {
+    pb.disabled = true;
+    var out = document.getElementById('psf-pages-out');
+    (function step(cursor, start) {
+      get(urlPages + '&cursor=' + encodeURIComponent(cursor || '') + (start ? '&start=' + encodeURIComponent(start) : '')).then(function (json) {
+        if (json.error) { out.textContent = json.error; pb.disabled = false; return; }
+        out.textContent = (json.cursor || '') + ' · auto: ' + json.auto;
+        if (!json.done) { step(json.cursor, json.start); return; }
+        out.textContent = '{{ text_pages_done|e('js') }} auto: ' + json.auto; pb.disabled = false;
+      });
+    })('', '');
+  });
+  var mt = document.getElementById('psf-mt');
+  if (mt) mt.addEventListener('click', function () {
+    mt.disabled = true;
+    var out = document.getElementById('psf-mt-out');
+    (function step(cursor) {
+      get('{{ url_manticore|e('js') }}&cursor=' + cursor).then(function (json) {
+        if (json.error) { out.textContent = json.error; mt.disabled = false; return; }
+        out.textContent = json.done ? '{{ text_mt_done|e('js') }} ' + json.docs : '… ' + json.cursor;
+        if (!json.done) { step(json.cursor); return; }
+        setTimeout(function () { location.reload(); }, 1200);
+      });
+    })(0);
+  });
+  var urls = { start: '{{ url_start|e('js') }}', step: '{{ url_step|e('js') }}', wizard: '{{ url_wizard|e('js') }}', clear: '{{ url_clear|e('js') }}', cronkey: '{{ url_cronkey|e('js') }}' };
+  function get(url) { return fetch(url, { credentials: 'same-origin', headers: { 'X-Requested-With': 'XMLHttpRequest' } }).then(function (r) { return r.json(); }); }
+  function alertBox(type, text) {
+    var box = document.getElementById('psf-alert'); box.innerHTML = '';
+    var d = document.createElement('div'); d.className = 'alert alert-' + type; d.textContent = text; box.appendChild(d);
+  }
+  function show(job) {
+    var pct = job.total ? Math.round(job.done / job.total * 100) : 0;
+    if (job.status === 'done') { pct = 100; }
+    document.getElementById('psf-bar').style.width = pct + '%';
+    document.getElementById('psf-progress').textContent = '#' + job.job_id + ' · ' + job.stage + ' · ' + job.done + ' / ' + job.total + (job.log ? ' · ' + job.log : '');
+  }
+  function loop() {
+    get(urls.step).then(function (json) {
+      if (json.error) { alertBox('danger', json.error); return; }
+      show(json.job);
+      if (json.job.status === 'running') { loop(); return; }
+      if (json.job.status === 'done') { alertBox('success', '{{ text_reindex_done|e('js') }}'); setTimeout(function () { location.reload(); }, 1200); }
+      else { alertBox('danger', json.job.status + ': ' + json.job.log); }
+    }).catch(function (e) { alertBox('danger', String(e)); });
+  }
+  function start(restart) {
+    get(urls.start + (restart ? '&restart=1' : '')).then(function (json) {
+      if (json.error) { alertBox('danger', json.error); return; }
+      show(json.job); loop();
+    });
+  }
+  var b = document.getElementById('psf-reindex'); if (b) b.addEventListener('click', function () { b.disabled = true; start(false); });
+  var r = document.getElementById('psf-restart'); if (r) r.addEventListener('click', function () { start(true); });
+  var w = document.getElementById('psf-wizard'); if (w) w.addEventListener('click', function () {
+    get(urls.wizard).then(function (json) {
+      var out = document.getElementById('psf-wizard-out'); out.style.display = 'block';
+      if (json.error) { out.textContent = json.error; return; }
+      var lines = Object.keys(json.created).map(function (k) { return k + ' — ' + json.created[k]; });
+      out.textContent = lines.length ? '{{ text_wizard_created|e('js') }} ' + lines.length + ':\n' + lines.join('\n') + '\n\n{{ text_wizard_reindex|e('js') }}' : '{{ text_wizard_nothing|e('js') }}';
+    });
+  });
+  var c = document.getElementById('psf-clear'); if (c) c.addEventListener('click', function () { get(urls.clear).then(function (json) { alertBox(json.error ? 'danger' : 'success', json.error || json.success); }); });
+  var k = document.getElementById('psf-cronkey'); if (k) k.addEventListener('click', function () { get(urls.cronkey).then(function () { location.reload(); }); });
+})();
+</script>
+{{ footer }}

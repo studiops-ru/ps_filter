@@ -1,0 +1,110 @@
+<style>
+.ps-support__head { display: flex; gap: 16px; align-items: center; margin: 20px 0; }
+.ps-support__mark { flex: 0 0 auto; width: 86px; height: 40px; }
+.ps-support__title { font-size: 18px; color: #2b2b2d; margin: 0 0 2px; font-weight: 600; }
+.ps-support h3 { font-size: 15px; color: #2b2b2d; margin: 24px 0 8px; font-weight: 600; }
+.ps-support__changes dt { color: #2b2b2d; }
+.ps-support__changes dd { margin: 0 0 10px; }
+.ps-support__changes ul { padding-left: 18px; margin: 4px 0 0; }
+.ps-support__modules li { margin-bottom: 4px; }
+.ps-support__copied { margin-left: 10px; color: #3c763d; }
+.ps-support pre { margin-top: 8px; white-space: pre-wrap; }
+.ps-support summary { display: list-item; cursor: pointer; }
+</style>
+<div class="ps-support">
+  <div class="row">
+    <div class="col-md-7">
+      <div class="ps-support__head">
+        <svg class="ps-support__mark" viewBox="0 0 216 100" role="img" aria-label="Студия Полякова Сергея">
+          <g fill="#2b2b2d">
+            <g transform="translate(166 50)"><path transform="rotate(-90)" d="M-50,50V-20A30,30 0 0 1 -20,-50H20A30,30 0 0 1 50,-20V50H28V-20A8,8 0 0 0 20,-28H-20A8,8 0 0 0 -28,-20V50Z"/></g>
+            <g transform="translate(50 50)"><path d="M-50,50V-20A30,30 0 0 1 -20,-50H20A30,30 0 0 1 50,-20V50H28V-20A8,8 0 0 0 20,-28H-20A8,8 0 0 0 -28,-20V50Z"/></g>
+          </g>
+        </svg>
+        <div>
+          <p class="ps-support__title">{{ support.title|e }}</p>
+          {% if support.date %}<p class="text-muted" style="margin:0">{{ support_released|format(support.date)|e }}</p>{% endif %}
+        </div>
+      </div>
+      <p>{{ support_free|format(support.license)|e }}<br>{{ support_author|e }} <a href="{{ support.url.support|e }}" target="_blank" rel="noopener noreferrer" referrerpolicy="no-referrer">studiops.ru</a></p>
+
+      <h3>{{ support_question|e }}</h3>
+      <p>{{ support_write|e }} <a href="mailto:{{ support.mail|e }}?subject={{ support.title|url_encode|e }}">{{ support.mail|e }}</a>{{ support_question_text|e }}</p>
+      <p>
+        <button type="button" class="btn btn-default" id="ps-support-copy"><i class="fa fa-clipboard"></i> {{ support_copy|e }}</button>
+        <span class="ps-support__copied" id="ps-support-copied" aria-live="polite"></span>
+      </p>
+      <details id="ps-support-details">
+        <summary>{{ support_what|e }}</summary>
+        <pre id="ps-support-info">{{ support.info|e }}</pre>
+      </details>
+      <p>{{ support_all_modules|e }} <a href="{{ support.url.support|e }}" target="_blank" rel="noopener noreferrer" referrerpolicy="no-referrer">{{ support.site|e }}</a></p>
+
+      {% if support.recent %}
+      <h3>{{ support_news|e }}</h3>
+      <dl class="ps-support__changes">
+        {% for c in support.recent %}
+        <dt>{{ c.version|e }}{% if c.date %} ({{ c.date|e }}){% endif %}</dt>
+        <dd><ul>{% for item in c.items %}<li>{{ item|e }}</li>{% endfor %}</ul></dd>
+        {% endfor %}
+      </dl>
+      {% if support.older %}
+      <details>
+        <summary>{{ support_all_changes|e }}</summary>
+        <dl class="ps-support__changes" style="margin-top:8px">
+          {% for c in support.older %}
+          <dt>{{ c.version|e }}{% if c.date %} ({{ c.date|e }}){% endif %}</dt>
+          <dd><ul>{% for item in c.items %}<li>{{ item|e }}</li>{% endfor %}</ul></dd>
+          {% endfor %}
+        </dl>
+      </details>
+      {% endif %}
+      {% endif %}
+
+      <h3>{{ support_custom|e }}</h3>
+      <p>{{ support_custom_text|e }} <a href="mailto:{{ support.mail|e }}?subject={{ (support_subject_custom ~ ' ' ~ support.name)|url_encode|e }}">{{ support.mail|e }}</a>{{ support_custom_end|e }}</p>
+
+      <h3>{{ support_partner|e }}</h3>
+      <p>{{ support_partner_text|e }} <a href="mailto:{{ support.mail|e }}?subject={{ support_subject_partner|url_encode|e }}">{{ support.mail|e }}</a>{{ support_partner_end|e }}</p>
+    </div>
+
+    <div class="col-md-5">
+      <h3 style="margin-top:20px">{{ support_others|e }}</h3>
+      <ul class="list-unstyled ps-support__modules">
+        {% for m in support.modules %}
+        <li><strong>{{ m.name|e }}</strong>: {{ m.title|e }}{% if m.installed %} <span class="label label-success">{{ support_installed|e }}</span>{% endif %}</li>
+        {% endfor %}
+      </ul>
+      <p><a href="{{ support.url.modules|e }}" target="_blank" rel="noopener noreferrer" referrerpolicy="no-referrer">{{ support_modules_link|e }}</a></p>
+    </div>
+  </div>
+</div>
+<script>
+(function () {
+  var btn = document.getElementById('ps-support-copy');
+  var out = document.getElementById('ps-support-copied');
+  var info = document.getElementById('ps-support-info');
+  if (!btn || !out || !info) {
+    return;
+  }
+  function manual() {
+    document.getElementById('ps-support-details').open = true;
+    var range = document.createRange();
+    range.selectNodeContents(info);
+    var sel = window.getSelection();
+    sel.removeAllRanges();
+    sel.addRange(range);
+    out.textContent = '{{ support_copy_manual|escape('js') }}';
+  }
+  btn.addEventListener('click', function () {
+    out.textContent = '';
+    if (navigator.clipboard && window.isSecureContext) {
+      navigator.clipboard.writeText(info.textContent).then(function () {
+        out.textContent = '{{ support_copied|escape('js') }}';
+      }, manual);
+    } else {
+      manual();
+    }
+  });
+})();
+</script>

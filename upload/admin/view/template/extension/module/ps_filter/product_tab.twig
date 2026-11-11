@@ -1,0 +1,26 @@
+{# PS Filter — вкладка «Фильтр» в карточке товара: значения своих фасетов. #}
+<div class="tab-pane" id="tab-ps-filter">
+  <input type="hidden" name="psf_custom_present" value="1">
+  {% if facets %}
+  <p class="text-muted">{{ help_product_filter }}</p>
+  <div class="form-horizontal">
+    {% for f in facets %}
+    <div class="form-group">
+      <label class="col-sm-2 control-label">{{ f.name|e }}</label>
+      <div class="col-sm-10">
+        {% if f.values %}
+        <div class="well well-sm" style="max-height: 180px; overflow: auto; margin-bottom: 6px;">
+          {% for v in f.values %}
+          <label class="checkbox-inline" style="margin: 0 12px 4px 0; padding-left: 20px;"><input type="checkbox" name="psf_custom[{{ f.facet_id }}][]" value="{{ v.value_id }}"{% if v.checked %} checked{% endif %}> {{ v.name|e }}</label>
+          {% endfor %}
+        </div>
+        {% endif %}
+        <input type="text" name="psf_custom_new[{{ f.facet_id }}]" class="form-control" placeholder="{{ entry_new_values|e }}">
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="alert alert-info">{{ text_no_custom_facets }}</div>
+  {% endif %}
+</div>

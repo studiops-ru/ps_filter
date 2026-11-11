@@ -1,0 +1,67 @@
+{# PS Filter — SEO-шаблоны. #}
+{{ header }}{{ column_left }}
+<div id="content">
+  <div class="page-header">
+    <div class="container-fluid">
+      <div class="pull-right">
+        <a href="{{ url_pages }}" class="btn btn-default"><i class="fa fa-file-text-o"></i> {{ heading_pages }}</a>
+        {% if can_modify %}
+        <a href="{{ add }}" class="btn btn-primary" title="{{ button_add }}"><i class="fa fa-plus"></i></a>
+        <button type="submit" form="psf-tpl-form" name="delete" value="1" class="btn btn-danger" title="{{ button_delete }}" onclick="return confirm('{{ text_confirm_delete_templates|e('js') }}');"><i class="fa fa-trash-o"></i></button>
+        {% endif %}
+      </div>
+      <h1>{{ heading_templates }}</h1>
+      <ul class="breadcrumb">{% for b in breadcrumbs %}<li><a href="{{ b.href }}">{{ b.text }}</a></li>{% endfor %}</ul>
+    </div>
+  </div>
+  <div class="container-fluid">
+    {% if success %}<div class="alert alert-success">{{ success }}</div>{% endif %}
+    <div class="panel panel-default">
+      <div class="panel-heading"><h3 class="panel-title"><i class="fa fa-magic"></i> {{ heading_templates }}</h3></div>
+      <div class="panel-body">
+        <p class="text-muted">{{ help_templates }}</p>
+        <p>
+          <b>{{ text_seo_facets }}:</b>
+          {% if seo_facets %}{{ seo_facets|join(', ') }}{% else %}<span class="text-danger">{{ text_seo_facets_none }}</span>{% endif %}
+          — <a href="{{ url_facets }}">{{ text_seo_facets_edit }}</a>
+        </p>
+      </div>
+      <form id="psf-tpl-form" method="post" action="{{ action }}">
+        <div class="table-responsive">
+          <table class="table table-hover">
+            <thead>
+              <tr>
+                <th style="width: 1px;"></th>
+                <th>{{ column_title }}</th>
+                <th>{{ column_scope }}</th>
+                <th>{{ column_facet }}</th>
+                <th>{{ column_limits }}</th>
+                <th>{{ column_language }}</th>
+                <th class="text-center">{{ column_status }}</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+            {% for t in templates %}
+              <tr>
+                <td><input type="checkbox" name="selected[]" value="{{ t.template_id }}"></td>
+                <td><code>{{ t.title|e }}</code></td>
+                <td>{{ t.scope|e }}</td>
+                <td>{{ t.facet|e }}</td>
+                <td>{{ t.limits }}</td>
+                <td>{{ t.language }}</td>
+                <td class="text-center">{% if t.status %}<i class="fa fa-check text-success"></i>{% else %}<i class="fa fa-minus text-muted"></i>{% endif %}</td>
+                <td class="text-right"><a href="{{ t.edit }}" class="btn btn-primary btn-sm"><i class="fa fa-pencil"></i></a></td>
+              </tr>
+            {% else %}
+              <tr><td colspan="8" class="text-center text-muted">{{ text_no_templates }}</td></tr>
+            {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </form>
+    </div>
+    {{ support_footer }}
+  </div>
+</div>
+{{ footer }}

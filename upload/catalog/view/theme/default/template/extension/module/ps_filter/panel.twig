@@ -1,0 +1,49 @@
+{#
+  PS Filter — панель фильтра.
+  Переопределение в теме: catalog/view/theme/<тема>/template/extension/module/ps_filter/panel.twig
+  (и так же любой файл рядом: facet.twig, widget/*.twig). JS цепляется только за data-psf-*,
+  классы — для оформления; их можно менять свободно.
+#}
+<div class="psf{% if count %} psf--active{% endif %}{% if not autosubmit %} psf--manual{% endif %}" data-psf data-psf-config="{{ config|e }}"{% if style %} style="{{ style|e }}"{% endif %}>
+  <div class="psf__header">
+    <span class="psf__title">{{ heading_title }}</span>
+    {% if count %}<a class="psf__reset" href="{{ reset|e }}" data-psf-link rel="nofollow">{{ text_reset }}</a>{% endif %}
+  </div>
+
+  {% if selected %}
+  <div class="psf-tags">
+    {% for tag in selected %}
+    <a class="psf-tag" href="{{ tag.href|e }}" data-psf-link rel="nofollow" title="{{ text_remove }}">
+      <span class="psf-tag__facet">{{ tag.facet|e }}:</span>
+      <span class="psf-tag__name">{% if tag.name %}{{ tag.name|e }}{% else %}{% if tag.from != '' %}{{ text_from }} {{ tag.from_text|default(tag.from) }} {% endif %}{% if tag.to != '' %}{{ text_to }} {{ tag.to_text|default(tag.to) }}{% endif %}{% if tag.suffix %} {{ tag.suffix|e }}{% endif %}{% endif %}</span>
+      <span class="psf-tag__remove" aria-hidden="true">&times;</span>
+    </a>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  {% if seo_links %}
+  <div class="psf-seo-links">
+    <div class="psf-seo-links__title">{{ text_landings }}</div>
+    {% for link in seo_links %}
+    <a class="psf-seo-links__item{{ link.active ? ' is-active' }}" href="{{ link.href|e }}" data-psf-link>{{ link.name|e }}</a>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  <div class="psf__body">
+    {% for facet in facets %}
+      {% include [tpl ~ 'facet.twig', tpl_default ~ 'facet.twig'] %}
+    {% endfor %}
+  </div>
+
+  {% include [tpl ~ 'rest.twig', tpl_default ~ 'rest.twig'] %}
+
+  <div class="psf__footer">
+    <span class="psf__total">{{ text_found }} <b data-psf-total>{{ total }}</b></span>
+    {# «Сбросить» внизу — в окне и слое «Все фильтры» (шапки панели там нет). #}
+    {% if count %}<a class="psf-btn psf__clear" href="{{ reset|e }}" data-psf-link rel="nofollow">{{ text_reset }}</a>{% endif %}
+    {# Кнопка применения: в режиме без автоприменения — применить выбор; в мобильной шторке — закрыть ее. #}
+    <a class="psf-btn psf-btn--primary psf__apply" href="{{ url|e }}" data-psf-apply rel="nofollow">{{ apply_text }}</a>
+  </div>
+</div>

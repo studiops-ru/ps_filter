@@ -1,0 +1,13 @@
+{# Цвета: кружки-образцы. Цвет значения задается в админке (Фасеты → значения); без цвета — подпись. #}
+<ul class="psf-swatches">
+  {% for value in facet.values %}
+  <li class="psf-swatch{{ value.selected ? ' is-selected' }}{{ value.disabled ? ' is-disabled' }}{{ value.extra ? ' is-extra' }}">
+    <label class="psf-swatch__label" title="{{ value.name|e }}{% if value.count is not null %} ({{ value.count }}){% endif %}">
+      <input class="psf-swatch__input" type="checkbox" data-psf-href="{{ value.href|e }}"{{ value.selected ? ' checked' }}{{ value.disabled ? ' disabled' }}>
+      <span class="psf-swatch__color"{% if value.color %} style="--psf-swatch: {{ value.color|e }}"{% endif %}>{% if not value.color %}{{ value.name|slice(0, 2)|e }}{% endif %}</span>
+      {% if value.link %}<a class="psf-swatch__name" href="{{ value.href|e }}" data-psf-link>{{ value.name|e }}</a>{% else %}<span class="psf-swatch__name">{{ value.name|e }}</span>{% endif %}
+    </label>
+  </li>
+  {% endfor %}
+</ul>
+{% if facet.more %}<button type="button" class="psf-more" data-psf-more data-psf-less-text="{{ text_less }}">{{ text_more }} ({{ facet.more }})</button>{% endif %}
