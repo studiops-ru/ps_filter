@@ -18,6 +18,12 @@ class Cache
     /** @var array */
     private $memory = [];
 
+    /**
+     * Потолок строк ps_filter_cache: сверх него вытесняются записи, которые протухнут раньше всех. Без потолка
+     * любой посетитель перебором адресов фильтра раздувал бы таблицу (аудит 1.1.1).
+     */
+    const MAX_ROWS = 50000;
+
     public function __construct(Kernel $kernel)
     {
         $this->k = $kernel;
@@ -52,12 +58,14 @@ class Cache
      * @param string $scope   группа для инвалидации: defs, cat:57, mfg:8, search…
      * @param mixed  $value
      * @param int    $ttl     секунды; ±10 % разброса, чтобы ключи не протухали разом
+     * @param bool   $persist false — только память запроса: ключи из произвольного ввода посетителя
+     *                        (границы диапазона, текст поиска) в базу не пишем
      */
-    public function set($key, $scope, $value, $ttl)
+    public function set($key, $scope, $value, $ttl, $persist = true)
     {
         $hash = md5($key);
         $this->memory[$hash] = $value;
-        if ($this->driver === 'none') {
+        if ($this->driver === 'none' || !$persist) {
             return;
         }
         $ttl = max(1, (int)$ttl);
@@ -66,6 +74,7 @@ class Cache
         // Без cron просроченные строки копились бы вечно: примерно каждая сотая запись чистит их сама.
         if (mt_rand(1, 100) === 1) {
             $this->gc();
+            $this->trim();
         }
         $db->query("REPLACE INTO `" . $this->k->table('cache') . "` (cache_key, scope, expire, `data`) VALUES ('" . $hash . "', '"
             . $db->escape(substr($scope, 0, 48)) . "', " . $expire . ", '" . $db->escape(json_encode($value, JSON_UNESCAPED_UNICODE)) . "')");
@@ -101,6 +110,17 @@ class Cache
     public function gc()
     {
         $this->k->db()->query("DELETE FROM `" . $this->k->table('cache') . "` WHERE expire <= " . time());
+        $this->trim();
+    }
+
+    /** Строк больше MAX_ROWS — удалить те, что протухнут раньше всех, до 90 % потолка. */
+    private function trim()
+    {
+        $db = $this->k->db();
+        $rows = (int)$db->query("SELECT COUNT(*) AS c FROM `" . $this->k->table('cache') . "`")->row['c'];
+        if ($rows > self::MAX_ROWS) {
+            $db->query("DELETE FROM `" . $this->k->table('cache') . "` ORDER BY expire ASC LIMIT " . ($rows - (int)(self::MAX_ROWS * 0.9)));
+        }
     }
 
     /**

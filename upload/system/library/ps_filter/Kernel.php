@@ -11,7 +11,7 @@ namespace PsFilter;
 class Kernel
 {
     /** Версия кода модуля. Версия схемы БД — Schema::DB_VERSION. */
-    const VERSION = '1.1.1';
+    const VERSION = '1.1.2';
 
     /**
      * Стык с ps_search (Storefront::searchSeam): поиск отдает найденное и порядок релевантности.

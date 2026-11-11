@@ -252,7 +252,7 @@ class Settings extends Base
     /**
      * Проверка и приведение присланных настроек по описанию полей (fields()): флаги → 0/1, числа → int
      * в допустимых границах, списки — только из вариантов, тексты — строки до 255 символов.
-     * Неизвестные ключи отбрасывает Settings::save().
+     * Ключи, которых нет в форме, отбрасываются (служебные значения и cron_key присланным не меняются).
      *
      * @return string|null текст ошибки
      */
@@ -301,6 +301,8 @@ class Settings extends Base
                 if (isset($spec[$key])) {
                     return sprintf($this->language->get('error_setting'), $key);
                 }
+                // Ключа нет в форме (служебные значения, cron_key): присланное отбрасываем, остается сохраненное.
+                unset($settings[$key]);
                 continue;
             }
             $type = $spec[$key];

@@ -35,7 +35,8 @@ class Index extends Base
         $data['running'] = (bool)$kernel->job()->running();
         $data['can_modify'] = $this->can('modify', 'index');
 
-        $key = (string)$kernel->settings()->get('cron_key');
+        // Ключ cron — только с правом изменения: с ним по HTTP запускаются переиндексация и пересчеты.
+        $key = $data['can_modify'] ? (string)$kernel->settings()->get('cron_key') : '';
         $data['cron_key'] = $key;
         $catalog = $this->catalogUrl();
         $data['cron_http'] = $key ? $catalog . 'index.php?route=' . $this->route('base', 'cron') . '&key=' . $key . '&task=reconcile' : '';

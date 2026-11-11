@@ -37,7 +37,7 @@ abstract class Base implements Backend
         $base = $this->k->cache()->get($baseKey);
         if (!is_array($base)) {
             $base = $this->baseStats($ctx, $defs);
-            $this->k->cache()->set($baseKey, $ctx->scope(), $base, 3600);
+            $this->k->cache()->set($baseKey, $ctx->scope(), $base, 3600, $this->persistable($ctx));
         }
         $result->totalBase = (int)$base['total'];
         $result->baseCounts = $base['counts'];
@@ -60,7 +60,8 @@ abstract class Base implements Backend
             $stats = $this->k->cache()->get($cntKey);
             if (!is_array($stats)) {
                 $stats = $this->filteredStats($ctx, $state, $defs, $base);
-                $this->k->cache()->set($cntKey, $ctx->scope(), $stats, (int)$this->k->settings()->get('cache_ttl_counters', 600));
+                $this->k->cache()->set($cntKey, $ctx->scope(), $stats, (int)$this->k->settings()->get('cache_ttl_counters', 600),
+                    $this->persistable($ctx) && !$state->hasRange());
             }
             $result->total = (int)$stats['total'];
             $result->counts = $stats['counts'];
@@ -71,12 +72,25 @@ abstract class Base implements Backend
         // 3. Страница товаров.
         if ($listing !== null) {
             $t2 = microtime(true);
-            $result->productIds = $result->total > 0 ? $this->pageIds($ctx, $state, $defs, $listing, $result->totalBase) : [];
+            // Страница за последней — без запроса к базе.
+            $start = isset($listing['start']) ? max(0, (int)$listing['start']) : 0;
+            $result->productIds = $result->total > $start ? $this->pageIds($ctx, $state, $defs, $listing, $result->totalBase) : [];
             $result->timings['page'] = round((microtime(true) - $t2) * 1000, 1);
         }
 
         $result->timings['total'] = round((microtime(true) - $t0) * 1000, 1);
         return $result;
+    }
+
+    /**
+     * Писать ли статистику контекста в кеш базы: у поиска ключ зависит от текста запроса — любой посетитель
+     * перебором строк раздувал бы таблицу, поэтому поиск кешируется только в памяти запроса.
+     *
+     * @return bool
+     */
+    protected function persistable(Context $ctx)
+    {
+        return $ctx->type !== Context::SEARCH;
     }
 
     /** @return string префикс ключей кеша движка */
@@ -193,7 +207,7 @@ abstract class Base implements Backend
         $base = $this->k->cache()->get($baseKey);
         if (!is_array($base)) {
             $base = $this->baseStats($ctx, $defs);
-            $this->k->cache()->set($baseKey, $ctx->scope(), $base, 3600);
+            $this->k->cache()->set($baseKey, $ctx->scope(), $base, 3600, $this->persistable($ctx));
         }
         return $this->restrictToContext($state, $defs, $base);
     }

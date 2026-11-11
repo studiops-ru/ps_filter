@@ -29,6 +29,21 @@ class State
     }
 
     /** @return bool */
+    /**
+     * Есть ли выбор диапазона (цена, числовая характеристика): границы — произвольные числа посетителя.
+     *
+     * @return bool
+     */
+    public function hasRange()
+    {
+        foreach ($this->all() as $s) {
+            if (is_array($s) && (array_key_exists('min', $s) || array_key_exists('max', $s))) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     public function isEmpty()
     {
         return !$this->sel;

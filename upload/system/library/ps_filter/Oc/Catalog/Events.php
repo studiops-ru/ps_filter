@@ -382,8 +382,8 @@ class Events extends Base
         $result = $kernel->engine()->search($this->listContext($ctx, $kernel->runtime()->state), $kernel->runtime()->state, [
             'sort'  => $sort,
             'order' => $order,
-            'start' => isset($data['start']) ? (int)$data['start'] : 0,
-            'limit' => isset($data['limit']) ? (int)$data['limit'] : 20,
+            'start' => isset($data['start']) ? max(0, (int)$data['start']) : 0,
+            'limit' => isset($data['limit']) ? min(1000, max(1, (int)$data['limit'])) : 20,
         ]);
         $kernel->runtime()->result = $result;
 

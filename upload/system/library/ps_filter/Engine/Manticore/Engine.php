@@ -234,7 +234,7 @@ class Engine extends \PsFilter\Engine\Base
         $dir = isset($listing['order']) && strtoupper($listing['order']) === 'DESC' ? 'DESC' : 'ASC';
         $sort = isset($listing['sort']) ? $listing['sort'] : 'p.sort_order';
         $start = max(0, (int)(isset($listing['start']) ? $listing['start'] : 0));
-        $limit = max(1, (int)(isset($listing['limit']) ? $listing['limit'] : 20));
+        $limit = min(1000, max(1, (int)(isset($listing['limit']) ? $listing['limit'] : 20)));
 
         list($select, $where) = $this->conditions($ctx, $state, $defs);
         $columns = ['p.sort_order' => 'sort_order', 'pd.name' => 'name_sort', 'rating' => 'rating', 'p.model' => 'model_sort',

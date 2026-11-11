@@ -127,7 +127,53 @@ class Panel extends Base
         }
         $data['style'] = implode(';', $vars);
 
-        return $this->early((int)$settings->get('mobile_breakpoint')) . $this->view('panel', $data);
+        $html = Platform::oc4() || self::twigIncludes() ? $this->view('panel', $data) : $this->renderOc3('panel', $data);
+        return $this->early((int)$settings->get('mobile_breakpoint')) . $html;
+    }
+
+    /**
+     * Умеет ли обертка Twig ядра OC3 находить вложенные шаблоны ({% include %}): в 3.0.3.x и сборках с поиском по
+     * папке шаблонов — да, в 3.0.5.x — нет (Template\Twig грузит только сам шаблон, ArrayLoader), и панель с
+     * include фасетов и виджетов не выводилась.
+     *
+     * @return bool
+     */
+    private static function twigIncludes()
+    {
+        static $ok = null;
+        if ($ok === null) {
+            $file = DIR_SYSTEM . 'library/template/twig.php';
+            $ok = !is_file($file) || strpos((string)file_get_contents($file), 'FilesystemLoader') !== false;
+        }
+        return $ok;
+    }
+
+    /**
+     * Шаблон модуля через свое окружение Twig с поиском вложенных шаблонов по папке тем (OC3 без такого поиска).
+     * Повторяет штатное: шаблон темы, если есть, иначе default, правка из редактора тем (design/theme),
+     * строки загруженных языковых файлов в данных (событие event/language).
+     *
+     * @return string
+     */
+    private function renderOc3($name, array $data)
+    {
+        list($dir, $dirDefault) = $this->kernel()->storefront()->templateDirs();
+        $route = is_file(DIR_TEMPLATE . $dir . $name . '.twig') ? $dir . $name : $dirDefault . $name;
+        $theme = substr($route, 0, strpos($route, '/'));
+        $this->load->model('design/theme');
+        $info = $this->model_design_theme->getTheme(substr($route, strlen($theme . '/template/')), $theme);
+        $code = $info ? html_entity_decode($info['code'], ENT_QUOTES, 'UTF-8') : (string)file_get_contents(DIR_TEMPLATE . $route . '.twig');
+        foreach ($this->language->all() as $key => $value) {
+            if (!isset($data[$key])) {
+                $data[$key] = $value;
+            }
+        }
+        $loader = new \Twig\Loader\ChainLoader([
+            new \Twig\Loader\ArrayLoader([$route . '.twig' => $code]),
+            new \Twig\Loader\FilesystemLoader([DIR_TEMPLATE]),
+        ]);
+        $twig = new \Twig\Environment($loader, ['autoescape' => false, 'debug' => false, 'auto_reload' => true, 'cache' => DIR_CACHE . 'template/']);
+        return $twig->render($route . '.twig', $data);
     }
 
     /**
